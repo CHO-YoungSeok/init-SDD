@@ -41,7 +41,7 @@ fi
 OS_VER="$(openspec --version 2>/dev/null | tr -d '\r')"
 say "   openspec: $OS_VER"
 case "$OS_VER" in
-  1.[0-9].*|0.*) say "   경고: 1.12 이상을 권한다. 지금 버전에서는 일부 명령이 다를 수 있다." ;;
+  1.[0-9].*|1.1[01].*|0.*) say "   경고: 1.12 이상을 권한다. 지금 버전에서는 일부 명령이 다를 수 있다." ;;
 esac
 
 # --- 2. OpenSpec 초기화 ---
@@ -108,6 +108,7 @@ fi
 # --- 5. 설치 확인 ---
 say ""
 say "5. 설치 확인"
+if [[ $DRY -eq 1 ]]; then say "   (--dry-run: 확인은 건너뛴다)"; fi
 if [[ $DRY -eq 0 ]]; then
   N_AGENTS=$(ls "$DST/.claude/agents"/*.md 2>/dev/null | wc -l | tr -d ' ')
   say "   에이전트: ${N_AGENTS}개 (7이어야 한다)"
@@ -137,8 +138,11 @@ if [[ ${#SKIPPED[@]} -gt 0 ]]; then
 fi
 say ""
 say "다음 할 일:"
-say "  1. openspec/config.yaml 의 context: 주석을 풀고 기술 스택·테스트·빌드 명령을 적어라."
+say "  1. openspec/config.yaml 에 context: 를 적어라 — 기술 스택·테스트·빌드 명령."
 say "     (여기가 프로젝트 사정이 에이전트에게 전달되는 유일한 통로다. 비우면 스택을 스스로 고른다)"
+say "     주의: 줄 맨 앞에(들여쓰기 없이) 새로 적어라. 예시 주석에서 # 만 지우면 들여쓰기가"
+say "     남아 YAML이 깨지고, openspec은 경고만 내고 그 파일을 통째로 무시한다."
+say "     적은 뒤 'openspec context' 로 Warning 이 없는지 확인해라."
 say "  2. .gitignore 에 .claude/settings.local.json 한 줄을 더해라 (개인 설정)."
 say "  3. Claude Code를 새 세션으로 다시 열어라 (새 에이전트·스킬이 잡힌다)."
 say ""

@@ -107,7 +107,11 @@ openspec update --force
 
 ### 프로젝트 규칙 심기 (빼먹으면 에이전트가 스택을 스스로 고른다)
 
-`openspec/config.yaml` 의 `context:` 주석을 풀고 채워라.
+`openspec/config.yaml` 에 `context:` 를 적어라.
+
+> **주의: 줄 맨 앞에(들여쓰기 없이) 새로 적어라.** 예시 주석에서 `#` 만 지우면 들여쓰기가 남아
+> YAML이 깨지고, openspec은 **경고만 내고 그 파일을 통째로 무시한다**(종료코드는 0이라 눈치채기 어렵다).
+> 적은 뒤 `openspec context` 를 돌려 `Warning` 이 없는지 확인해라.
 
 ```yaml
 context: |
@@ -175,7 +179,7 @@ context: |
 | `design.md` | designer | 어떻게 (조건부) |
 | `tasks.md` | designer | 작업 목록 |
 | `review.md` | reviewer | 판정 (finalizer가 읽어 확인) |
-| `.openspec.yaml` | preparer | spec에 남길 게 없는 change 표시 (`skip_specs`) |
+| `.openspec.yaml` | preparer / designer | spec 없는 change 표시(`skip_specs`) · capability 은퇴 표시(`retire_capabilities`) |
 
 작업이 끝나면 `finalizer`가 델타를 `openspec/specs/` 의 메인 spec에 병합한다.
 그게 이 프로젝트의 **누적된 사양**이 된다.

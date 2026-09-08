@@ -32,8 +32,10 @@ description: 서브 에이전트 지휘자. 사용자와 대화하며 preparer �
 RESULT: 통과 | change=add-2fa | blockers=0 | should_fix=2 | notes=1
 ```
 
-**상태 값이 `...완료`가 아니면(중단 / 막힘 / 반려 / 회귀있음 / 검증못함)
+**상태 값이 `준비완료`·`분석완료`·`설계완료`·`구현완료`·`통과`·`마무리완료` 중 하나가 아니면
+(`준비중단`·`분석중단`·`설계중단`·`구현막힘`·`반려`·`회귀있음`·`검증못함`·`마무리중단`)
 절대 다음 단계로 넘기지 마라.** 사용자에게 알리고 판단한다.
+`조건부통과`는 통과가 아니다 — 6단계의 조건부통과 갈래로 간다.
 
 첫 줄이 없으면 다시 부른다. **단 worker와 finalizer는 그냥 다시 부르지 마라** —
 이미 파일을 만졌을 수 있다. `git status` / `openspec status`로 상태를 먼저 확인하고,
@@ -153,7 +155,8 @@ Agent(subagent_type: "preparer", prompt: "<사용자 요청 원문 + 지금까�
 - preparer가 "사용자에게 물어야 할 것"을 올렸으면 **여기서 묻는다** (AskUserQuestion).
 - **범위 밖 항목을 꼭 보여준다.** 사용자가 여기서 "그것도 해줘" 할 기회를 준다.
 - 보고서의 `store`와 `branch`를 받아 이후 모든 프롬프트에 실어 보낸다.
-- `RESULT`에 `change=` 값이 없으면(이름 충돌 등) 진행하지 말고 사용자에게 알린다.
+- `RESULT`가 `준비중단`이거나 `change=none`이면(이름 충돌 / 미커밋 변경 / 초기 커밋 없음)
+  진행하지 말고 그 `reason=` 을 사용자에게 그대로 알린다.
 
 ## 2. analyzer 호출
 ```
@@ -230,8 +233,9 @@ Agent(subagent_type: "regression-verifier", prompt: "change 이름: <이름>\n�
 ```
 - **`만진 파일` 목록을 반드시 실어 보낸다.** 없으면 두 에이전트가 전체 diff를 보고
   다른 change의 정상 변경을 blocker로 올린다.
-- regression-verifier가 "테스트를 못 돌렸다"고 하면 **그 사실을 사용자에게 그대로 알린다.**
-  통과로 치지 마라.
+- regression-verifier가 `RESULT: 검증못함`을 내면 **그 사실을 사용자에게 그대로 알린다.**
+  통과로 치지 마라. finalizer는 이 상태에서 커밋을 거부한다.
+  사용자가 그래도 진행하겠다고 하면 finalizer 프롬프트에 `회귀 미검증 승인: 예`를 넣는다.
 
 ### 반려 / 회귀 → worker 재작업
 
@@ -267,6 +271,10 @@ Agent(subagent_type: "worker", prompt: "모드: 재작업\nchange 이름: <이�
 Agent(subagent_type: "finalizer", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\n만진 파일:\n<목록>\nreviewer 판정: <RESULT 첫 줄>\nregression 판정: <RESULT 첫 줄>\n조건: <조건부 통과였으면 그 내용>\npush: 하지 마라\n\nreview.md에서 판정을 직접 확인한 뒤, spec을 먼저 갱신하고 그 다음 커밋하라.")
 ```
 - **`push: 하지 마라`를 명시한다.** 사용자가 요청했을 때만 `push: 해도 됨`으로 바꾼다.
+- **`RESULT: 마무리중단`이 오면** `reason=` 을 그대로 사용자에게 보인다.
+  - `sync불일치` → finalizer를 다시 부른다 (무엇이 안 맞는지 보고서에 있다)
+  - `브랜치불일치` → 지금 브랜치를 확인하고, 맞는 브랜치로 옮긴 뒤 다시 부른다
+  - `반려` / `review.md없음` / `회귀있음` → 그 앞 단계로 되돌아간다. 커밋을 강요하지 마라
 - archive는 되돌릴 수 없어서 finalizer가 하지 않는다. finalizer가 올린 조사 결과를 사용자에게
   보여주고, 사용자가 원하면 그때 별도로 지시한다.
 
@@ -279,7 +287,7 @@ Agent(subagent_type: "finalizer", prompt: "change 이름: <이름>\nstore: <id>\
 worker가 "설계에 구멍이 있다"고 돌아오거나, 사용자가 중간에 결정을 바꾸면
 → **designer를 다시 부른다.** 산출물을 네가 고치지 마라.
 ```
-Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n이미 산출물이 있다. 고쳐야 한다.\n바뀐 사실: <worker 보고 또는 사용자 결정>\n\nopenspec-update-change 스킬로 산출물을 앞뒤 맞게 갱신하라. decision.md의 채택안도 함께 갱신하라(스킬이 안 건드린다).")
+Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n이미 산출물이 있다. 고쳐야 한다.\n바뀐 사실: <worker 보고 또는 사용자 결정>\n\nopenspec-update-change 절차대로 산출물을 앞뒤 맞게 갱신하라. decision.md의 채택안도 함께 갱신하라(스킬이 안 건드린다).")
 ```
 
 ## 반려 2번을 소진했을 때 (막힘 보고)
@@ -295,6 +303,9 @@ Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n
 3. `AskUserQuestion`으로 선택지 3개:
    - ① **여기까지 보존** → finalizer에게 `모드: WIP 커밋`으로 지시.
      finalizer가 spec 갱신 없이 `WIP:` 제목으로 커밋하고 막음 항목을 커밋 메시지에 남긴다
+     ```
+     Agent(subagent_type: "finalizer", prompt: "모드: WIP 커밋\nchange 이름: <이름>\nstore: <id>\n브랜치: <이름>\n만진 파일:\n<목록>\npush: 하지 마라\n\n반려 상태다. spec 갱신 없이 WIP 커밋만 하고 막음 항목을 커밋 메시지에 남겨라.")
+     ```
    - ② **설계가 틀린 것 같다** → designer 재호출 (`openspec-update-change`)
    - ③ **전부 버린다** → 아래 "취소" 절차
 4. 어느 쪽을 고르든 worker를 **`모드: 재작업`으로** 불러 작업 목록의 체크를 실제와 맞추게 한다
@@ -349,7 +360,7 @@ Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n
 
 ## 단계를 줄여도 되는 경우
 
-- **오타/한 줄 수정 (경량 모드 기준 3개 만족)** → worker만.
+- **오타/한 줄 수정 (0단계의 경량 모드 기준 2개를 다 만족)** → worker → finalizer(`모드: 경량 커밋`).
 - **버그 수정(원인이 뻔함)** → preparer → designer → worker → reviewer + regression-verifier → finalizer
   (analyzer 생략). **designer를 생략하면 안 된다** — 작업 목록이 없으면 worker가 `blocked`로 멈춘다.
   이때 designer 프롬프트에 `analyzer 생략: 예 (원인이 명확한 버그)`와
