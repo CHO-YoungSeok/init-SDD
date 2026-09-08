@@ -155,8 +155,20 @@ openspec instructions <artifact-id> --change "<이름>" --json
   - capability 경로는 proposal의 `## Capabilities`를 따른다. 기존 경로는 그대로 유지한다.
   - `status: "skipped"`면 이 산출물은 만들지 않는다.
   - `## REMOVED Requirements`로 capability의 요구사항을 **전부** 지우는 설계라면,
-    `<changeRoot>/.openspec.yaml`에 `retire_capabilities: true`를 추가하고 보고서에 그 사실과
-    이유를 적는다. **이 한 줄이 없으면 finalizer가 메인 spec 파일을 지우지 못하고 sync가 멈춘다.**
+    `<changeRoot>/.openspec.yaml`에 `retire_capabilities: true` 마커를 넣고 보고서에 그 사실과
+    이유를 적는다. **이 마커가 없으면 finalizer가 메인 spec 파일을 지우지 못하고 sync가 멈춘다.**
+    - **이 파일은 네가 새로 만드는 파일이 아니다.** `openspec new change`가 이미 만들어 둔
+      파일이고 `schema:`, `created:` 같은 키가 들어 있다 (`--goal`을 줬으면 `goal:`도 있다).
+      **기존 키를 하나라도 지우면 마커가 무시되고 검증이 막힌다.** `schema:` 하나만 챙기는 게
+      아니라 그 파일에 있는 키를 **전부** 그대로 둔 채 마커만 덧붙여야 한다.
+    - 아래를 그대로 복사해서 쓴다 (`<changeRoot>`만 실제 경로로 바꾼다):
+      ```bash
+      f="<changeRoot>/.openspec.yaml"
+      grep -q '^retire_capabilities:' "$f" || printf '\nretire_capabilities: true\n' >> "$f"
+      ```
+      `>>`가 기존 키 유실을, `grep -q` 가드가 두 번 실행했을 때의 키 중복을,
+      `printf` 앞의 `\n`이 개행 없이 끝난 마지막 줄에 마커가 이어 붙는 것을 막는다.
+    - **이 파일에는 `Write` 도구도 셸 `>` 리다이렉트도 쓰지 마라.** 둘 다 기존 키를 통째로 날린다.
 
 - **design.md** (조건부 — `instruction`이 "필요할 때만"이라고 하면 판단해서 건너뛸 수 있다)
   - "어떻게". 고른 안의 실제 구조.
@@ -195,8 +207,21 @@ openspec status --change "<이름>"
 - **종료코드로 판정한다.** 성공은 `0`, 실패는 `1`이다. 출력만 눈으로 훑지 마라.
   ```bash
   openspec validate "<이름>" --strict; echo "exit=$?"
+  openspec status --change "<이름>" --json >/dev/null; echo "metadata exit=$?"
   ```
   파이프(`| tail` 등)를 붙이면 종료코드가 파이프 끝 명령의 것으로 바뀐다. 붙이지 마라.
+  `>/dev/null`은 JSON 본문이 아니라 **종료코드만** 필요해서 붙이는 것이다.
+- **두 게이트는 역할이 다르다. 하나가 다른 하나를 대신하지 못한다.**
+  `status`는 `.openspec.yaml` 메타데이터가 깨졌는지 보는 게이트이고,
+  `validate --strict`는 델타 자체를 검사하는 게이트다.
+- **`validate --strict`만으로는 부족하다.** `retire_capabilities`를 잘못 넣어 기존 키를 잃으면
+  `validate --strict`는 `exit=0`으로 그냥 통과하고 `status`만 `exit=1`이 된다.
+- `metadata exit`이 `0`이 아니면 `.openspec.yaml`이 깨진 것이다.
+  `cat "<changeRoot>/.openspec.yaml"`로 파일을 직접 열어 세 가지를 본다.
+  **에러 문구 하나를 찾지 말고 파일을 봐라** — 실패 모드마다 나오는 문구가 다르고, 아예 안 나오기도 한다.
+  1. `openspec new change`가 만든 기존 키(`schema:`, `created:`, 있으면 `goal:`)가 전부 살아 있는가
+  2. 마커 키(`retire_capabilities:`)가 두 번 나오지 않는가
+  3. 마커가 앞 줄 끝에 이어 붙지 않았는가 (`created: 2026-01-01retire_capabilities: true` 같은 모양)
 - 검증이 실패하면 통과라고 보고하지 마라. **출력을 그대로 붙인다.**
 
 **종료 조건:** 필요한 산출물이 전부 아래 중 하나가 되면 끝난다.

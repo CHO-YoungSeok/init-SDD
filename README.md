@@ -179,7 +179,7 @@ context: |
 | `design.md` | designer | 어떻게 (조건부) |
 | `tasks.md` | designer | 작업 목록 |
 | `review.md` | reviewer | 판정 (finalizer가 읽어 확인) |
-| `.openspec.yaml` | preparer / designer | spec 없는 change 표시(`skip_specs`) · capability 은퇴 표시(`retire_capabilities`) |
+| `.openspec.yaml` | `openspec new change` 가 만들고, preparer / designer 가 마커만 덧붙임 | spec 없는 change 표시(`skip_specs`) · capability 은퇴 표시(`retire_capabilities`) |
 
 작업이 끝나면 `finalizer`가 델타를 `openspec/specs/` 의 메인 spec에 병합한다.
 그게 이 프로젝트의 **누적된 사양**이 된다.

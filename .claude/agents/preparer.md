@@ -143,17 +143,50 @@ openspec instructions proposal --change "<이름>" --json
 spec이 없다는 이유로 `skip_specs`를 쓰지 마라. 그러면 사양이 영원히 안 쌓인다.
 
 **capability가 하나도 없으면** (순수 리팩터링 / 툴링 / 문서 / 빌드 설정 — **요구사항 자체가 없는** 경우):
-`<changeRoot>/.openspec.yaml`에 `skip_specs: true` 한 줄을 추가하고, 보고서에 그 사실과 이유를 적는다.
+`<changeRoot>/.openspec.yaml`에 `skip_specs: true` 마커를 넣고, 보고서에 그 사실과 이유를 적는다.
 이걸 안 하면 `openspec validate`가 `Change must have at least one delta`로 막는다.
+
+**이 파일은 네가 새로 만드는 파일이 아니다.** `openspec new change`가 이미 만들어 둔 파일이고
+`schema:`, `created:` 같은 키가 들어 있다 (`--goal`을 줬으면 `goal:`도 있다).
+**기존 키를 하나라도 지우면 마커가 무시되고 검증이 막힌다.** `schema:` 하나만 챙기는 게 아니라
+그 파일에 있는 키를 **전부** 그대로 둔 채 마커만 덧붙여야 한다.
+
+아래를 그대로 복사해서 쓴다 (`<changeRoot>`만 실제 경로로 바꾼다):
+```bash
+f="<changeRoot>/.openspec.yaml"
+grep -q '^skip_specs:' "$f" || printf '\nskip_specs: true\n' >> "$f"
+```
+`>>`가 기존 키 유실을, `grep -q` 가드가 두 번 실행했을 때의 키 중복을,
+`printf` 앞의 `\n`이 개행 없이 끝난 마지막 줄에 마커가 이어 붙는 것을 막는다.
+
+**이 파일에는 `Write` 도구도 셸 `>` 리다이렉트도 쓰지 마라.** 둘 다 기존 키를 통째로 날린다.
+
 **검증을 통과하려고 없는 요구사항을 만들어내지 마라.**
 
 ### 7. 확인
 ```bash
-openspec validate "<이름>"
+openspec validate "<이름>"; echo "validate exit=$?"
+openspec status --change "<이름>" --json >/dev/null; echo "metadata exit=$?"
 ```
-- 아직 델타가 없어서 실패할 수 있다(`exit=1`). 그건 정상이다. **에러 문구를 보고서에 그대로 적는다.**
+- **두 종료코드를 다 찍어 보고 둘 다 보고한다.** 역할이 다르다.
+  `validate`는 델타 자체를 검사하고, `status`는 `.openspec.yaml` 메타데이터가 성한지를 본다.
+  `metadata exit`이 `0`이 아니면 **`.openspec.yaml`이 깨진 것이다.** 다음으로 넘어가지 말고 고쳐라.
+- `>/dev/null`을 붙이는 건 JSON 본문이 아니라 **종료코드만** 필요해서다.
+  파이프(`| tail` 등)를 붙이면 종료코드가 파이프 끝 명령의 것으로 바뀐다. 붙이지 마라.
+- **`validate` 출력만 보고 판정하지 마라.** 마커가 앞 줄에 이어 붙어 YAML이 깨진 경우
+  `validate`에는 델타 없음 에러 하나만 나와서 정상으로 오독된다.
+  그 파손을 실제로 드러내는 건 `status` 쪽 종료코드뿐이다.
+- 아직 델타가 없어서 실패할 수 있다(`exit=1`). **`skip_specs`를 설정하지 않았다면** 그건 정상이다.
+  **에러 문구를 보고서에 그대로 적는다.**
 - `skip_specs: true`를 설정했으면 이 시점에 **통과한다**(`exit=0`, `[INFO] skip_specs is set`).
-  통과하지 않으면 마커가 제대로 안 들어간 것이니 확인해라.
+  **`skip_specs`를 넣었는데도 델타 없음 에러가 나오면 그건 정상이 아니다.** 마커가 반영되지
+  않은 것이니 아래 진단으로 `.openspec.yaml`을 확인해라.
+- 두 종료코드 중 하나라도 기대와 다르면 `cat "<changeRoot>/.openspec.yaml"`로 파일을 직접 열어
+  세 가지를 본다.
+  **에러 문구 하나를 찾지 말고 파일을 봐라** — 실패 모드마다 나오는 문구가 다르고, 아예 안 나오기도 한다.
+  1. `openspec new change`가 만든 기존 키(`schema:`, `created:`, 있으면 `goal:`)가 전부 살아 있는가
+  2. 마커 키(`skip_specs:`)가 두 번 나오지 않는가
+  3. 마커가 앞 줄 끝에 이어 붙지 않았는가 (`created: 2026-01-01skip_specs: true` 같은 모양)
 - `openspec validate --specs`는 쓰지 마라. 그건 메인 spec 전용이다.
 
 ## 하지 말아야 할 것
