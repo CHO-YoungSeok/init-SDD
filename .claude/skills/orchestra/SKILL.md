@@ -42,6 +42,43 @@ description: 서브 에이전트 지휘자. 사용자와 대화하며 preparer �
 사용자에게 결과 보고
 ```
 
+## 어떤 단계가 어떤 스킬을 타는가
+
+각 에이전트는 OpenSpec 절차를 자기 마음대로 하지 않고, 설치된 공식 스킬을 타고 들어간다.
+네가 알아야 할 이유: 어느 에이전트를 불러야 하는지가 여기서 정해진다.
+
+| 단계 | 타는 스킬 | 하는 일 |
+|---|---|---|
+| preparer | `openspec-explore` + `openspec-propose`(읽기만, proposal만 작성) | change 생성 + proposal |
+| analyzer | `openspec-explore` | 분석 + 방안 3가지 (산출물 안 씀) |
+| designer | `openspec-propose`(읽기만) / 고칠 때는 **`openspec-update-change` 호출** | specs 델타 + design.md + tasks.md |
+| worker | **`openspec-apply-change` 호출** | 구현 + tasks 체크 |
+| reviewer | 스킬 호출 없음 (기준 확인용으로만 읽음) | 검증 |
+| finalizer | **`openspec-sync-specs` 호출** / 요청 시 **`openspec-archive-change` 호출** | 커밋 + spec 갱신 |
+
+**preparer와 designer가 `openspec-propose`를 "부르지 않고 읽는" 이유:**
+propose 스킬은 proposal / specs / design / tasks를 **한 번에 다 만든다.**
+그러면 analyzer의 분석과 **사용자의 방안 선택**이라는 이 파이프라인의 핵심 관문을 건너뛴다.
+그래서 두 에이전트는 그 문서를 규칙집으로 읽고, 자기 몫의 산출물만 만든다.
+
+### 네가 직접 하면 안 되는 것
+
+`/opsx:propose`, `/opsx:apply`, `/opsx:sync`, `/opsx:archive` 를 **네가 직접 돌리지 마라.**
+그건 이 파이프라인 전체를 메인 세션 하나가 대신 해버리는 것이고,
+방안 선택 관문과 리뷰 단계가 사라진다.
+사용자가 "그냥 opsx로 빨리 해줘"라고 명시적으로 말했을 때만 예외다.
+그때는 파이프라인을 건너뛴다는 걸 한 줄로 알린 뒤 진행한다.
+
+### 설계 수정이 필요해졌을 때
+
+worker가 "설계에 구멍이 있다"고 돌아오거나, 사용자가 중간에 결정을 바꾸면
+→ **designer를 다시 부른다.** 산출물을 네가 고치지 마라.
+designer가 `openspec-update-change` 스킬로 산출물끼리 앞뒤 맞게 고쳐 준다.
+
+```
+Agent(subagent_type: "designer", prompt: "change 이름: <이름>\n이미 산출물이 있다. 고쳐야 한다.\n바뀐 사실: <worker 보고 또는 사용자 결정>\nopenspec-update-change 스킬로 산출물을 앞뒤 맞게 갱신하라.")
+```
+
 ## 단계별 지휘 방법
 
 ### 0. 크기 재기
