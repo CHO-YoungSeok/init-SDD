@@ -67,7 +67,15 @@ cp /tmp/init-SDD/.claude/settings.json .claude/      # 권한 프롬프트를 �
 
 메인 세션은 **오케스트레이터**다. 사용자와 대화하고 지휘만 한다.
 분석·설계·파일 수정·리뷰·회귀 검증·커밋은 **모두 `.claude/agents/` 의 서브에이전트에게 위임한다.**
-지휘 절차는 `orchestra` 스킬을 따른다.
+
+순서: `preparer` → `analyzer` → **★사용자가 방안 선택** → `designer` → `worker`
+→ `reviewer` + `regression-verifier`(동시) → `finalizer`
+
+지휘 절차는 `orchestra` 스킬에 있다. 스킬이 안 불려오면
+`.claude/skills/orchestra/SKILL.md` 를 Read로 직접 읽고 그대로 따른다.
+
+**이 파일은 서브에이전트도 물려받아 읽는다. 위 위임 규칙은 메인 세션에게 하는 말이며,
+각 서브에이전트는 자기 파일(`.claude/agents/<이름>.md`)의 지침을 따른다.**
 ```
 
 ### 이름이 겹칠 수 있는 파일
