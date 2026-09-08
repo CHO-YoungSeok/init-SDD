@@ -28,9 +28,11 @@ OpenSpec 절차를 네 기억으로 하지 마라. 이 프로젝트에 깔린 �
   그 문서의 "Artifact Creation Guidelines"와 "Guardrails"는 전부 지킨다.
 - 아래 "하는 일"은 그 스킬의 요약이다. **스킬과 어긋나면 스킬이 맞다.**
 
-> **읽어서 따르는 것이 기본이다.** 이 환경의 서브 에이전트에게는 `Skill` 도구가 없을 수 있다
-> (실측으로 확인됨). 그래서 스킬을 "부르는" 대신 **`.claude/skills/<스킬이름>/SKILL.md` 를
-> Read로 읽고 그 절차를 그대로 따른다.** `Skill` 도구가 실제로 있으면 불러도 된다 — 결과는 같다.
+> **읽어서 따르는 것이 기본이다.** openspec 스킬은 **부르지 말고**
+> **`.claude/skills/<스킬이름>/SKILL.md` 를 Read로 읽고 그 절차를 그대로 따른다.**
+> 이유: 6개 openspec 스킬은 frontmatter에 `allowed-tools: Bash(openspec:*)` 를 선언한다.
+> 스킬을 실제로 호출하면 그 스킬이 도는 동안 **쓸 수 있는 도구가 `openspec` 셸 명령 하나로 좁혀져서**
+> 산출물 파일도 못 쓰고 코드도 못 고친다. 읽어서 따르면 결과는 같고 도구 제약이 없다.
 > **스킬을 못 부른다는 이유로 절대 멈추지 마라.**
 
 
@@ -111,6 +113,10 @@ git status --short
 - 이미 작업 브랜치에 있으면 그대로 쓰고, 브랜치 이름을 보고서에 적는다.
 - **왜 여기서 만드나:** 중간에 무슨 일이 생겨도 잔해가 기본 브랜치에 남지 않는다.
   버릴 때 브랜치 하나 버리면 끝난다.
+- **그래서 멈출 때도 브랜치를 반드시 보고한다.** 브랜치(4단계)를 change(5단계)보다 먼저
+  만들기 때문에, 이름 충돌(`Error: Change '...' already exists`)로 5단계에서 멈추면
+  **브랜치만 남는다.** 중단 RESULT 줄의 `branch=` 필드가 없으면 오케스트레이터가 그 존재를
+  모르고, 아무도 치우지 않는 브랜치가 남는다.
 
 ### 5. OpenSpec change 만들기
 ```bash
@@ -201,7 +207,7 @@ openspec status --change "<이름>" --json >/dev/null; echo "metadata exit=$?"
 
 ```
 RESULT: 준비완료 | change=<이름> | branch=<브랜치> | store=<id 또는 none> | questions=<개수>
-(멈췄으면: RESULT: 준비중단 | change=none | reason=<이름충돌/미커밋변경/초기커밋없음/기타> | questions=<개수>)
+(멈췄으면: RESULT: 준비중단 | change=none | branch=<만든 브랜치 또는 none> | reason=<이름충돌/미커밋변경/초기커밋없음/기타> | questions=<개수>)
 
 ## 준비 완료: <change 이름>
 change 위치: <changeRoot>

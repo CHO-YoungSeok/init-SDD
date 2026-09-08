@@ -28,9 +28,11 @@ skills: [openspec-explore]
 - 기준을 정확히 알아야 할 때는 `.claude/skills/openspec-propose/SKILL.md`를 Read로 읽어라.
   (specs 델타가 어떤 형태여야 하는지 알면 실현 가능한 방안을 낼 수 있다)
 
-> **읽어서 따르는 것이 기본이다.** 이 환경의 서브 에이전트에게는 `Skill` 도구가 없을 수 있다
-> (실측으로 확인됨). 그래서 스킬을 "부르는" 대신 **`.claude/skills/<스킬이름>/SKILL.md` 를
-> Read로 읽고 그 절차를 그대로 따른다.** `Skill` 도구가 실제로 있으면 불러도 된다 — 결과는 같다.
+> **읽어서 따르는 것이 기본이다.** openspec 스킬은 **부르지 말고**
+> **`.claude/skills/<스킬이름>/SKILL.md` 를 Read로 읽고 그 절차를 그대로 따른다.**
+> 이유: 6개 openspec 스킬은 frontmatter에 `allowed-tools: Bash(openspec:*)` 를 선언한다.
+> 스킬을 실제로 호출하면 그 스킬이 도는 동안 **쓸 수 있는 도구가 `openspec` 셸 명령 하나로 좁혀져서**
+> 산출물 파일도 못 쓰고 코드도 못 고친다. 읽어서 따르면 결과는 같고 도구 제약이 없다.
 > **스킬을 못 부른다는 이유로 절대 멈추지 마라.**
 
 ### 대화형 스킬을 만났을 때 (중요)

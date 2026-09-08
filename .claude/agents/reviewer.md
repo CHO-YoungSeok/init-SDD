@@ -63,6 +63,10 @@ openspec status --change "<이름>" --json
 - `artifactPaths.specs.existingOutputPaths` — **요구사항. 이게 최종 기준이다.**
   델타 경로는 **오직 여기서만** 가져온다. 글롭으로 뒤지지 마라 — designer가 다른 이름으로 쓴
   델타를 놓친다.
+  **`specs`의 `status`가 `skipped`이거나 `existingOutputPaths`가 비어 있으면
+  `skip_specs: true`인 change다.** 요구사항 델타를 일부러 만들지 않은 것이다.
+  **이건 정상이고 반려 사유가 아니다.** 이때 기준은 proposal의 받아들일 조건 + 작업 목록
+  머리말이다. **델타가 없다는 이유로 반려하지 마라.**
 - `artifactPaths.design.existingOutputPaths` — 어떻게 (없을 수 있다. 조건부 산출물이다)
 - `artifactPaths.tasks.existingOutputPaths` — 해야 했던 일
 - `<changeRoot>/decision.md` — **어떤 안으로 가기로 했는가. 이게 기준이다.**
@@ -99,6 +103,13 @@ git diff --stat
   그걸 "설계에 없는 변경"으로 올리면 남의 정상 작업을 반려하는 것이다.
 - 목록에 없는데 바뀐 파일이 보이면, **바로 넘친 범위로 올리지 말고** "이번 change 것인지 확인 필요"로
   구분해서 적는다.
+- **프롬프트에 `만진 파일` 목록이 없으면 멈추지 마라.** 목록이 없는 것은 정상일 수 있다
+  (오케스트레이터가 안 실어 보낼 수 있다). 이때는 **전체 diff를 범위로 잡고** 리뷰를 계속하되,
+  보고서에 한 줄로 적는다: "만진 파일 목록을 못 받아서 전체 diff를 범위로 삼았다.
+  다른 change의 변경이 섞였을 수 있다."
+  그 상태에서 발견한 "설계에 없는 변경"은 **막음으로 올리지 말고** 위의 "이번 change 것인지
+  확인 필요한 변경" 절에 넣는다. 범위가 불확실한 채로 남의 작업을 반려하면 안 된다.
+  RESULT 첫 줄에는 `scope=전체diff`를 남긴다.
 
 ### 4. 항목별로 검사한다
 
@@ -161,8 +172,10 @@ git diff --stat
 ## 보고 형식 (첫 줄은 반드시 이 형태로)
 
 ```
-RESULT: 통과 | change=<이름> | blockers=0 | should_fix=2 | notes=1
+RESULT: 통과 | change=<이름> | scope=<만진파일/전체diff> | blockers=0 | should_fix=2 | notes=1
 (또는 RESULT: 반려 | ... / RESULT: 조건부통과 | ...)
+(`scope=`는 무엇을 범위로 봤는지다. 프롬프트의 `만진 파일` 목록으로 좁혔으면 `scope=만진파일`,
+ 목록을 못 받아 전체 diff를 봤으면 `scope=전체diff`. 뒤쪽이면 본문에도 그 사실을 한 줄 적는다.)
 
 ## 리뷰: <change 이름>
 판정: 통과 / 조건부통과 / 반려   ← **판정 낱말은 붙여쓴다.** RESULT 줄과 같은 글자를 쓴다.

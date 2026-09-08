@@ -29,9 +29,11 @@ skills: [openspec-apply-change]
 - **`openspec-apply-change` 의 절차대로 구현한다** (`.claude/skills/openspec-apply-change/SKILL.md`).
   아래 설명은 그 스킬의 요약이다. **스킬과 어긋나면 스킬이 맞다.**
 
-> **읽어서 따르는 것이 기본이다.** 이 환경의 서브 에이전트에게는 `Skill` 도구가 없을 수 있다
-> (실측으로 확인됨). 그래서 스킬을 "부르는" 대신 **`.claude/skills/<스킬이름>/SKILL.md` 를
-> Read로 읽고 그 절차를 그대로 따른다.** `Skill` 도구가 실제로 있으면 불러도 된다 — 결과는 같다.
+> **읽어서 따르는 것이 기본이다.** openspec 스킬은 **부르지 말고**
+> **`.claude/skills/<스킬이름>/SKILL.md` 를 Read로 읽고 그 절차를 그대로 따른다.**
+> 이유: 6개 openspec 스킬은 frontmatter에 `allowed-tools: Bash(openspec:*)` 를 선언한다.
+> 스킬을 실제로 호출하면 그 스킬이 도는 동안 **쓸 수 있는 도구가 `openspec` 셸 명령 하나로 좁혀져서**
+> 산출물 파일도 못 쓰고 코드도 못 고친다. 읽어서 따르면 결과는 같고 도구 제약이 없다.
 > **스킬을 못 부른다는 이유로 절대 멈추지 마라.**
 
   단 아래 "재작업 모드"의 예외는 스킬보다 우선한다 (스킬에는 재작업 개념이 없다).
@@ -74,7 +76,14 @@ skills: [openspec-apply-change]
 openspec status --change "<이름>" --json
 openspec instructions apply --change "<이름>" --json
 ```
-- `state: "blocked"` → 산출물이 빠졌다. **만들지 말고 그대로 보고한다.**
+- `state: "blocked"` → **먼저 `missingArtifacts`를 본다. 여기서 두 갈래로 갈린다.**
+  - **`missingArtifacts`에 값이 있으면** → 진짜로 산출물이 빠진 것이다.
+    **만들지 말고 그대로 보고한다.**
+  - **`missingArtifacts`가 비어 있으면** → 산출물 파일은 다 있는데 **작업 목록에
+    체크박스가 하나도 없는 것**이다 (실측 응답: `tasks: []`, `progress.total: 0`).
+    이때는 **"작업 목록에 체크박스가 없다"로 정확히 보고한다.**
+    이걸 "산출물 누락"으로 보고하면 designer가 "이미 다 있다"고 답해 무한 왕복이 된다.
+
   CLI나 다른 스킬이 `openspec-*` 스킬을 안내했는데 `.claude/skills/`에 그 디렉터리가 없으면
   (예: `openspec-continue-change`) 따르려 하지 말고 **보고한다.**
   1.12에는 스킬이 13개 있지만 기본 설치는 6개다.

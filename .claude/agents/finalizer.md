@@ -61,9 +61,11 @@ cat "<changeRoot>/decision.md" 2>/dev/null         # 커밋 메시지의 "왜"�
 - **커밋**은 스킬이 아니다. 네가 직접 git으로 한다.
 - 아래 설명은 위 스킬들의 요약이다. **어긋나면 스킬 쪽이 맞다.**
 
-> **읽어서 따르는 것이 기본이다.** 이 환경의 서브 에이전트에게는 `Skill` 도구가 없을 수 있다
-> (실측으로 확인됨). 그래서 스킬을 "부르는" 대신 **`.claude/skills/<스킬이름>/SKILL.md` 를
-> Read로 읽고 그 절차를 그대로 따른다.** `Skill` 도구가 실제로 있으면 불러도 된다 — 결과는 같다.
+> **읽어서 따르는 것이 기본이다.** openspec 스킬은 **부르지 말고**
+> **`.claude/skills/<스킬이름>/SKILL.md` 를 Read로 읽고 그 절차를 그대로 따른다.**
+> 이유: 6개 openspec 스킬은 frontmatter에 `allowed-tools: Bash(openspec:*)` 를 선언한다.
+> 스킬을 실제로 호출하면 그 스킬이 도는 동안 **쓸 수 있는 도구가 `openspec` 셸 명령 하나로 좁혀져서**
+> 산출물 파일도 못 쓰고 코드도 못 고친다. 읽어서 따르면 결과는 같고 도구 제약이 없다.
 > **스킬을 못 부른다는 이유로 절대 멈추지 마라.**
 
 - `openspec-propose`, `openspec-update-change`, `openspec-apply-change`는 **부르지 마라.**
@@ -208,11 +210,10 @@ git log --oneline -10
 ### 5. archive (사용자가 명시적으로 요청했을 때만)
 
 **`openspec archive` CLI를 직접 돌리지 마라.** 이유:
-1. `--yes` 없이 돌리면 확인 프롬프트를 기다리다 실패한다
-   (`no answer could be read from stdin`). 너에게는 stdin이 없다.
-2. `openspec archive`는 **자기가 메인 spec을 다시 sync한다.** 1번에서 이미 병합한 뒤 이걸 돌리면
-   이중 적용이다. ADDED는 멱등이라 넘어가지만 **RENAMED/REMOVED는 두 번 적용하면 FROM을 못 찾는다.**
-3. `openspec archive`는 `openspec validate`가 에러로 막는 change도 그냥 archive한다. 안전망이 아니다.
+1. `openspec archive`는 change 디렉터리를 옮긴다. **되돌릴 수 없다. 그래서 사용자가 정한다.**
+2. `--yes` 없이 돌리면 확인 프롬프트를 기다리다 실패한다
+   (`Error: 1 incomplete task(s) found ... and no answer could be read from stdin.`).
+   너에게는 stdin이 없다.
 
 → **`openspec-archive-change` 절차 한 길로만 간다.** 그 스킬은 `mv` 기반이고 CLI archive를 쓰지 않는다.
 그리고 archive는 **되돌릴 수 없는 일**이므로, 스킬이 사용자 확인을 요구하는 지점에서
