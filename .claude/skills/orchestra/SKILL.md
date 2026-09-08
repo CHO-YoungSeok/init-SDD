@@ -32,6 +32,13 @@ description: 서브 에이전트 지휘자. 사용자와 대화하며 preparer �
 RESULT: 통과 | change=add-2fa | blockers=0 | should_fix=2 | notes=1
 ```
 
+**상태 값이 `...완료`가 아니면(중단 / 막힘 / 반려 / 회귀있음 / 검증못함)
+절대 다음 단계로 넘기지 마라.** 사용자에게 알리고 판단한다.
+
+첫 줄이 없으면 다시 부른다. **단 worker와 finalizer는 그냥 다시 부르지 마라** —
+이미 파일을 만졌을 수 있다. `git status` / `openspec status`로 상태를 먼저 확인하고,
+worker는 `모드: 재작업`으로, finalizer는 "커밋 여부를 먼저 확인하라"를 붙여서 부른다.
+
 ## 파이프라인
 
 ```
@@ -59,15 +66,19 @@ RESULT: 통과 | change=add-2fa | blockers=0 | should_fix=2 | notes=1
 
 ## 어떤 단계가 어떤 스킬을 타는가
 
-| 단계 | 타는 스킬 | 하는 일 |
+**중요 (실측):** 이 환경의 서브 에이전트에게는 `Skill` 도구가 없을 수 있다. 그래서 에이전트들은
+스킬을 "부르는" 대신 **`.claude/skills/<이름>/SKILL.md` 를 Read로 읽고 그 절차를 따르도록** 되어 있다.
+결과는 같다. "스킬을 못 불러서 멈췄다"는 보고가 오면 그 에이전트 파일이 낡은 것이다.
+
+| 단계 | 따르는 절차 문서 | 하는 일 |
 |---|---|---|
 | preparer | `openspec-explore` + `openspec-propose`(읽기만, proposal만 작성) | 브랜치 + change 생성 + proposal |
 | analyzer | `openspec-explore` | 분석 + 방안 3가지 (산출물 안 씀) |
-| designer | `openspec-propose`(읽기만) / 고칠 때는 **`openspec-update-change` 호출** | decision.md + specs 델타 + design.md + tasks.md |
-| worker | **`openspec-apply-change` 호출** | 구현 + 작업 체크 |
-| reviewer | 스킬 호출 없음 (기준 확인용으로만 읽음) | 요구사항/설계 준수 검증 + review.md |
-| regression-verifier | 스킬 호출 없음 | 기존 동작 회귀 검증 (테스트/빌드/린트) |
-| finalizer | **`openspec-sync-specs` 호출** / 요청 시 **`openspec-archive-change` 호출** | spec 갱신 → 커밋 |
+| designer | `openspec-propose` / 고칠 때는 **`openspec-update-change`** | decision.md + specs 델타 + design.md + tasks.md |
+| worker | **`openspec-apply-change`** | 구현 + 작업 체크 |
+| reviewer | 없음 (기준 확인용으로만 읽음) | 요구사항/설계 준수 검증 + review.md |
+| regression-verifier | 없음 | 기존 동작 회귀 검증 (테스트/빌드/린트) |
+| finalizer | **`openspec-sync-specs`** / 요청 시 **`openspec-archive-change`** | spec 갱신 → 커밋 |
 
 **preparer와 designer가 `openspec-propose`를 "부르지 않고 읽는" 이유:**
 propose 스킬은 proposal / specs / design / tasks를 **한 번에 다 만든다.**
@@ -75,8 +86,11 @@ propose 스킬은 proposal / specs / design / tasks를 **한 번에 다 만든�
 
 **중요:** OpenSpec 스킬들은 중간에 "사용자 확인"을 요구한다. 서브 에이전트는 사용자와 대화할 수
 없으므로, 각 에이전트 파일에 "확인 단계는 보고서에 적는 것으로 대체한다"는 규칙이 들어 있다.
-**되돌릴 수 없는 일**(archive, 메인 spec 파일 삭제, capability 은퇴, push)은 에이전트가 하지 않고
-보고만 한다. 그건 네가 사용자에게 물어서 처리한다.
+**되돌릴 수 없는 일**(archive, 메인 spec 파일 삭제, capability 은퇴, push, 강제 푸시,
+히스토리 조작, `git reset --hard` / `checkout -- .`, 브랜치 삭제, changeRoot 삭제)은
+에이전트가 스스로 하지 않고 보고만 한다. 그건 네가 사용자에게 물어서 처리한다.
+취소 흐름에서 이 중 하나를 시켜야 하면 **프롬프트에 대상 경로/브랜치를 글자 그대로 적어라.**
+"알아서 정리해라"는 절대 보내지 마라 — 에이전트는 그 지시를 거부하도록 되어 있다.
 
 ### 네가 직접 하면 안 되는 것
 
@@ -89,9 +103,12 @@ propose 스킬은 proposal / specs / design / tasks를 **한 번에 다 만든�
 
 ```
 change 이름: <이름>
-store: <id>            ← preparer 보고서에 있었으면. 없으면 이 줄 자체를 생략
+store: <id>            ← preparer의 RESULT에 `store=`가 실제 id일 때만
 브랜치: <이름>
 ```
+
+**`store=none`이면 `store:` 줄 자체를 생략한다. 절대 `store: none`이라고 적지 마라.**
+받는 쪽이 `--store "none"`을 붙여서 모든 openspec 명령이 죽는다.
 
 `store`는 한 번 정해지면 **끝까지 모든 프롬프트에 실어 보낸다.** 빠지면 그 에이전트만
 엉뚱한 저장소를 보고 "change를 못 찾음"이 난다.
@@ -104,22 +121,29 @@ store: <id>            ← preparer 보고서에 있었으면. 없으면 이 줄
 
 먼저 이 요청이 파이프라인 전체를 돌릴 일인지 본다.
 
-**경량 모드 기준 (셋을 다 만족해야 한다):**
-- 손대는 파일이 1개
-- **동작이 바뀌지 않는다** (오타, 주석, 로그 문구, 변수 이름)
+**경량 모드 기준 (둘을 다 만족해야 한다):**
+- **동작이 바뀌지 않는다** (오타, 주석, 로그 문구, 변수·파일 이름, 포맷)
 - spec에 적을 게 없다
 
-셋 중 하나라도 아니면 **정식 경로다.** 애매하면 정식 경로로 간다.
-경량 모드는 `change 이름` 없이 worker만 부른다:
+**파일 개수는 기준이 아니다.** 동작이 안 바뀌면 파일 5개를 만져도 경량이다.
+동작이 바뀌면 파일 1개여도 정식 경로다. 애매하면 정식 경로로 간다.
+경량 모드는 `모드: 경량`으로 worker만 부른다:
 ```
-Agent(subagent_type: "worker", prompt: "<고칠 내용을 구체적으로>\n(change 이름 없음 = 경량 모드)")
+Agent(subagent_type: "worker", prompt: "모드: 경량\n\n<고칠 내용을 구체적으로>")
 ```
+
+**경량 모드도 커밋은 finalizer가 한다.** worker가 끝나면 이어서:
+```
+Agent(subagent_type: "finalizer", prompt: "모드: 경량 커밋\nchange 이름: 없음\n브랜치: <현재 브랜치>\n만진 파일:\n<worker 보고서의 목록>\npush: 하지 마라\n\nreview.md도 change도 없는 경량 수정이다. spec 갱신 없이 이 파일들만 커밋하라.")
+```
+**커밋 안 된 변경을 남기면 다음 작업의 preparer가 브랜치를 못 만들고 멈춘다.**
+
 경량 모드로 갔다는 걸 사용자에게 한 줄로 알린다.
 
-**진행 중 change 확인:** 정식 경로로 갈 때, 활성 change가 이미 2개 이상이면
-새로 시작하기 전에 **"먼저 끝낼까요, 병행할까요"를 한 번 묻는다.**
+**진행 중 change 확인:** 이건 네가 하지 마라. store를 아직 모르는 시점이라 엉뚱한 저장소를 볼 수 있다.
+preparer가 확인해서 보고서의 "겹치는 진행 중 change"에 올린다. 그게 비어 있지 않으면
+**"먼저 끝낼까요, 병행할까요"를 한 번 묻는다.**
 병행하면 같은 작업 트리에서 diff가 섞여 reviewer/finalizer가 남의 변경을 잡는다.
-(각 change가 자기 브랜치를 갖게 preparer가 처리하지만, 사용자가 알고 있어야 한다)
 
 ## 1. preparer 호출
 ```
@@ -178,9 +202,13 @@ Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n
 
 ## 5. worker 호출
 ```
-Agent(subagent_type: "worker", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\n담당 작업: 전체 (또는 2.1~2.4)\n\n작업 목록의 작업을 구현하라.")
+Agent(subagent_type: "worker", prompt: "모드: 정식\nchange 이름: <이름>\nstore: <id>\n브랜치: <이름>\n담당 작업: 전체 (또는 2.1~2.4)\ndesign.md: <있음 / 없음(designer가 의도적으로 건너뜀)>\n\n작업 목록의 작업을 구현하라.")
 ```
-- **`담당 작업` 필드를 항상 넣는다.** 하나만 띄울 때도 `전체`라고 적는다.
+- **`정식`·`재작업` 프롬프트에는 `담당 작업` 필드를 항상 넣는다.** 하나만 띄울 때도 `전체`.
+  (경량·정리 모드에는 작업 목록이 없으므로 넣지 않는다)
+- **designer의 RESULT가 `design=건너뜀`이면 `design.md: 없음(의도적)`을 반드시 적는다.**
+  안 적으면 worker가 `blocked`를 "산출물 누락"으로 보고 멈추고, designer는 "이미 끝났다"고
+  답해서 무한 왕복이 된다.
 - 작업이 많고 서로 독립적이면 worker를 여러 개 동시에 띄운다:
   - 각자에게 **겹치지 않는 작업 번호 범위**를 준다
   - **같은 파일을 만지는 작업은 절대 나누지 마라**
@@ -193,10 +221,12 @@ Agent(subagent_type: "worker", prompt: "change 이름: <이름>\nstore: <id>\n�
 
 ## 6. reviewer + regression-verifier 호출 (동시에)
 
-한 번의 메시지에 두 Agent 호출을 담는다. 둘 다 읽기 전용이라 같이 돌아도 안전하다.
+한 번의 메시지에 두 Agent 호출을 담는다.
+**reviewer는 `review.md` 하나만 쓰고 regression-verifier는 아무 파일도 쓰지 않는다** —
+같은 파일을 만지지 않으므로 같이 돌아도 안전하다.
 ```
 Agent(subagent_type: "reviewer", prompt: "change 이름: <이름>\nstore: <id>\n만진 파일:\n<worker 보고서의 목록 그대로>\n\n요구사항 충족과 설계 준수를 검증하고 review.md에 남겨라.")
-Agent(subagent_type: "regression-verifier", prompt: "change 이름: <이름>\n만진 파일:\n<worker 보고서의 목록 그대로>\n\n이번 변경 때문에 기존 동작이 깨지지 않았는지 검증하라.")
+Agent(subagent_type: "regression-verifier", prompt: "change 이름: <이름>\n브랜치: <이름>\n만진 파일:\n<worker 보고서의 목록 그대로>\n\n이번 변경 때문에 기존 동작이 깨지지 않았는지 검증하라.")
 ```
 - **`만진 파일` 목록을 반드시 실어 보낸다.** 없으면 두 에이전트가 전체 diff를 보고
   다른 change의 정상 변경을 blocker로 올린다.
@@ -207,11 +237,13 @@ Agent(subagent_type: "regression-verifier", prompt: "change 이름: <이름>\n�
 
 두 보고서의 **막음(blocker)** 항목만 모아 worker를 **재작업 모드**로 부른다:
 ```
-Agent(subagent_type: "worker", prompt: "change 이름: <이름>\nstore: <id>\n담당 작업: 아래 항목만\n재작업: 예\n\n고쳐야 할 막음 항목:\n1. <reviewer가 쓴 그대로>\n2. <regression-verifier가 쓴 그대로>\n\n되돌릴 체크 항목: 2.3, 4.1\n\n이미 통과한 작업은 다시 만지지 마라.")
+Agent(subagent_type: "worker", prompt: "모드: 재작업\nchange 이름: <이름>\nstore: <id>\n브랜치: <이름>\n담당 작업: 아래 항목만\n재작업: 예\n\n고쳐야 할 막음 항목:\n1. <reviewer가 쓴 그대로>\n2. <regression-verifier가 쓴 그대로>\n\n되돌릴 체크 항목: 2.3, 4.1\n\n이미 통과한 작업은 다시 만지지 마라.")
 ```
 - **`재작업: 예`를 반드시 넣는다.** 이게 없으면 worker가 작업 목록이 전부 `[x]`인 것을 보고
   "다 끝났습니다, archive 하시죠"라고 축하하며 돌아온다. 루프가 아예 안 돈다.
 - `되돌릴 체크 항목`은 reviewer 보고서의 같은 이름 절에서 가져온다.
+- **재리뷰의 `만진 파일`은 1회차부터 지금까지의 합집합을 보낸다.** 마지막 라운드 목록만 보내면
+  reviewer가 앞 라운드 구현을 범위 밖으로 밀어내고, 그 부분은 아무도 검증하지 않은 채 통과한다.
 - 재리뷰 때는 reviewer 프롬프트에 **`이전 반려 내용:`**을 넣는다. 그래야 "고치라던 게 고쳐졌는지"를
   대조하고, 이미 note로 넘긴 걸 다시 막음으로 올리는 흔들림이 줄어든다.
 
@@ -219,7 +251,7 @@ Agent(subagent_type: "worker", prompt: "change 이름: <이름>\nstore: <id>\n�
 
 ### 조건부 통과
 
-`RESULT: 조건부통과`가 나오면 통과로 넘기지 마라. **should-fix 항목이 조용히 커밋된다.**
+`RESULT: 조건부통과`가 나오면 통과로 넘기지 마라. (판정 낱말은 붙여쓴다) **should-fix 항목이 조용히 커밋된다.**
 - review.md의 "조건"과 should-fix 목록을 사용자에게 보여주고 `AskUserQuestion`으로 한 번 묻는다:
   ① 지금 고친다 (→ worker 재작업) ② 이대로 진행하고 조건을 기록으로 남긴다 ③ 후속 change로 만든다
 - ②를 고르면 finalizer 프롬프트에 `조건: <내용>`을 실어 보낸다. finalizer가 커밋 메시지에 남긴다.
@@ -247,7 +279,7 @@ Agent(subagent_type: "finalizer", prompt: "change 이름: <이름>\nstore: <id>\
 worker가 "설계에 구멍이 있다"고 돌아오거나, 사용자가 중간에 결정을 바꾸면
 → **designer를 다시 부른다.** 산출물을 네가 고치지 마라.
 ```
-Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n이미 산출물이 있다. 고쳐야 한다.\n바뀐 사실: <worker 보고 또는 사용자 결정>\n\nopenspec-update-change 스킬로 산출물을 앞뒤 맞게 갱신하라.")
+Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n이미 산출물이 있다. 고쳐야 한다.\n바뀐 사실: <worker 보고 또는 사용자 결정>\n\nopenspec-update-change 스킬로 산출물을 앞뒤 맞게 갱신하라. decision.md의 채택안도 함께 갱신하라(스킬이 안 건드린다).")
 ```
 
 ## 반려 2번을 소진했을 때 (막힘 보고)
@@ -261,10 +293,12 @@ Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n
 1. 된 것 / 안 된 것 (reviewer의 마지막 막음 목록 그대로)
 2. 지금 파일 상태 한 줄 (`git diff --stat` 요약 + 어느 브랜치인지)
 3. `AskUserQuestion`으로 선택지 3개:
-   - ① **여기까지 보존** → finalizer에게 `모드: WIP 커밋` 으로 지시 (반려 상태를 커밋 메시지에 명시)
+   - ① **여기까지 보존** → finalizer에게 `모드: WIP 커밋`으로 지시.
+     finalizer가 spec 갱신 없이 `WIP:` 제목으로 커밋하고 막음 항목을 커밋 메시지에 남긴다
    - ② **설계가 틀린 것 같다** → designer 재호출 (`openspec-update-change`)
    - ③ **전부 버린다** → 아래 "취소" 절차
-4. 어느 쪽을 고르든 **작업 목록의 체크를 실제와 맞추는 일**을 worker에게 지시한다
+4. 어느 쪽을 고르든 worker를 **`모드: 재작업`으로** 불러 작업 목록의 체크를 실제와 맞추게 한다
+   (`재작업`이 아니면 `all_done`을 보고 그냥 돌아온다)
 
 ## 사용자가 중간에 취소할 때
 
@@ -272,7 +306,7 @@ Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n
 2. `AskUserQuestion`으로 묻는다: **남겨둘까 / 지울까 / 나중에 이어갈까**
 3. **"지운다"** → worker를 불러 처리한다. 네가 지우지 마라.
    ```
-   Agent(subagent_type: "worker", prompt: "정리 작업이다. (change 이름 없음 = 경량 모드)\n1. <changeRoot> 디렉터리를 삭제하라.\n2. 코드 변경은 <남길지 되돌릴지 사용자가 정한 대로>.\n3. 브랜치 <이름>은 <남길지 삭제할지>.")
+   Agent(subagent_type: "worker", prompt: "모드: 정리\nchangeRoot: <openspec status에서 얻은 실제 경로>\n브랜치: <이름>\n\n1. <changeRoot> 디렉터리를 삭제하라.\n2. 되돌릴 코드 파일: <경로를 글자 그대로 나열. 없으면 '없음'>\n3. 브랜치 <이름>: <남긴다 / 삭제한다>")
    ```
    코드 변경이 있었으면 **되돌릴 범위를 먼저 사용자에게 확인한다.**
 4. **"나중에"** → worker에게 proposal.md 맨 위에 `> 보류: <날짜> <이유>` 한 줄을 남기게 한다.
@@ -286,7 +320,7 @@ Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n
 - 사용자가 목표를 못 정하면 그대로 진행한다. designer가 "기준선 측정"을 첫 작업으로 넣고,
   reviewer는 before/after 숫자로 판정한다.
 - reviewer가 `[막음] 검증 불가 — 기준선 없음`을 올리면, 이건 코드 문제가 아니라
-  **측정이 빠진 것**이다. worker에게 측정 작업을 지시한다.
+  **측정이 빠진 것**이다. worker를 **`모드: 재작업`으로** 불러 측정 작업을 지시한다.
 
 ---
 
@@ -308,6 +342,7 @@ Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n
 | 필수 | 6단계 — 조건부 통과일 때의 조건 |
 | 필수 | 7단계 — 커밋 관문 ("알아서 해" 후엔 생략) |
 | 조건부 | 0단계 크기 재기 / preparer·designer가 올린 질문 / 반려 2회 후 / 취소 |
+| 조건부 | 5~7단계 — worker·regression-verifier·finalizer가 올린 질문 |
 | 안 함이 기본 | push, archive (사용자가 명시적으로 요청할 때만) |
 
 4단계(설계 확인)는 **묻는 곳이 아니라 알리는 곳이다.** designer가 우려를 올렸을 때만 묻는다.
@@ -315,8 +350,11 @@ Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n
 ## 단계를 줄여도 되는 경우
 
 - **오타/한 줄 수정 (경량 모드 기준 3개 만족)** → worker만.
-- **버그 수정(원인이 뻔함)** → preparer → designer(tasks만) → worker → reviewer + regression-verifier → finalizer
+- **버그 수정(원인이 뻔함)** → preparer → designer → worker → reviewer + regression-verifier → finalizer
   (analyzer 생략). **designer를 생략하면 안 된다** — 작업 목록이 없으면 worker가 `blocked`로 멈춘다.
+  이때 designer 프롬프트에 `analyzer 생략: 예 (원인이 명확한 버그)`와
+  `채택안: 없음 — proposal의 받아들일 조건이 기준`을 적는다. decision.md는 안 만들어도 된다.
+  동작 요구사항이 안 바뀌는 버그면 preparer가 `skip_specs: true`를 넣었을 것이다.
 - **"이거 왜 이래?" 같은 조사 요청** → analyzer만.
 - **이미 change가 있고 구현만 남음** → worker → reviewer + regression-verifier → finalizer
 - 무엇을 건너뛰었는지 사용자에게 한 줄로 알린다.
@@ -324,7 +362,7 @@ Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n
 ## 여러 에이전트 동시에 띄우기
 
 - 서로 독립적인 일이면 **한 번의 메시지에 여러 Agent 호출**을 담는다. 그래야 같이 돌아간다.
-- 같이 돌려도 되는 예: **reviewer + regression-verifier** (둘 다 읽기 전용, 보는 곳이 다르다),
+- 같이 돌려도 되는 예: **reviewer + regression-verifier** (쓰는 파일이 겹치지 않는다),
   서로 다른 파일을 만지는 worker들.
 - **같이 돌리면 안 되는 예:** 같은 파일을 만지는 worker 둘, 아직 안 끝난 작업의 reviewer.
 - 결과를 기다리는 중에 그 일을 네가 다시 하지 마라.

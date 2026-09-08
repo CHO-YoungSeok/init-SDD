@@ -2,7 +2,7 @@
 
 **어떤 프로젝트에든 얹어서 바로 시작하는 SDD(사양 주도 개발) 초기 구조.**
 
-`.claude/` 하나만 복사하면, 그 프로젝트의 Claude Code가
+`.claude/` 의 에이전트와 지휘 스킬을 얹고 `openspec init` 한 번 돌리면, 그 프로젝트의 Claude Code가
 "요구사항 정리 → 분석 → **사용자가 방안 선택** → 설계 → 구현 → 리뷰 → 회귀 검증 → 커밋"
 순서로 일하게 된다. 각 단계는 전용 서브에이전트가 맡는다.
 
@@ -19,7 +19,7 @@ Claude Code에게 큰 일을 그냥 맡기면, 분석과 설계와 구현이 한
 | 필요한 것 | 확인 | 없으면 |
 |---|---|---|
 | Claude Code | `claude --version` | [설치 안내](https://claude.com/claude-code) |
-| OpenSpec CLI | `openspec --version` (1.12 이상) | `npm i -g openspec` 또는 `brew install openspec` |
+| OpenSpec CLI | `openspec --version` (1.12 이상) | `npm i -g @fission-ai/openspec` 또는 `brew update && brew install openspec` |
 | git 저장소 | `git status` | `git init` |
 
 ## 설치
@@ -27,7 +27,8 @@ Claude Code에게 큰 일을 그냥 맡기면, 분석과 설계와 구현이 한
 ### 방법 1 — 스크립트 (권장)
 
 ```bash
-git clone https://github.com/CHO-YoungSeok/init-SDD.git /tmp/init-SDD
+rm -rf /tmp/init-SDD
+git clone --depth 1 https://github.com/CHO-YoungSeok/init-SDD.git /tmp/init-SDD
 cd /path/to/your-project
 bash /tmp/init-SDD/install.sh --dry-run   # 무엇을 할지 먼저 본다
 bash /tmp/init-SDD/install.sh             # 설치
@@ -41,16 +42,18 @@ bash /tmp/init-SDD/install.sh             # 설치
 ```bash
 cd /path/to/your-project
 
-# OpenSpec 초기화 (openspec/ 디렉터리와 공식 스킬 6개를 만든다)
-openspec init --tools claude
+# OpenSpec 초기화 (openspec/ 디렉터리와 공식 스킬 6개 + /opsx 명령 6개를 만든다)
+openspec init --tools claude          # 산출물 언어를 정하려면 --language ko (또는 en)
 
 # 에이전트와 지휘 스킬 복사
 cp -r /tmp/init-SDD/.claude/agents .claude/
 cp -r /tmp/init-SDD/.claude/skills/orchestra .claude/skills/
-cp /tmp/init-SDD/.claude/commands/orchestra.md .claude/commands/
+cp /tmp/init-SDD/.claude/settings.json .claude/      # 권한 프롬프트를 줄인다. 이미 있으면 allow 배열만 합쳐라
 ```
 
-`.claude/skills/openspec-*` 은 복사하지 마라. `openspec init`이 설치된 CLI 버전에 맞는 것을 만든다.
+> **`.claude/skills/openspec-*` 와 `.claude/commands/opsx/` 는 복사하지 마라.**
+> 이 저장소에 들어 있는 건 1.12.0 스냅샷일 뿐이다. `openspec init`이 네 CLI 버전에 맞는 걸 깔아 준다.
+> `cp -r init-SDD/.claude/* .claude/` 를 하면 오래된 걸로 덮어쓴다.
 
 ### CLAUDE.md 는 복사하지 말고 **합쳐라**
 
@@ -74,7 +77,40 @@ cp /tmp/init-SDD/.claude/commands/orchestra.md .claude/commands/
 - `CLAUDE.md` → 위 안내대로 **합친다**
 - `.claude/agents/{preparer,analyzer,designer,worker,reviewer,regression-verifier,finalizer}.md`
 - `.claude/skills/orchestra/`
-- `.claude/commands/orchestra.md`
+- `.claude/settings.json` → 이미 있으면 **`permissions.allow` 배열만 합친다**
+
+### 설치 확인
+
+```bash
+ls .claude/agents | wc -l                              # 7
+ls .claude/skills                                      # openspec-* 6개 + orchestra
+ls .claude/skills/openspec-{explore,propose,update-change,apply-change,sync-specs,archive-change}/SKILL.md
+openspec list                                          # 에러 없이 돌아야 한다
+```
+
+스킬이 하나라도 없으면 (전역 설정에 따라 안 깔릴 수 있다):
+```bash
+openspec config set delivery both
+openspec config set profile core
+openspec update --force
+```
+
+**Claude Code를 새 세션으로 다시 열어야** 새 에이전트와 스킬이 잡힌다.
+
+### 프로젝트 규칙 심기 (빼먹으면 에이전트가 스택을 스스로 고른다)
+
+`openspec/config.yaml` 의 `context:` 주석을 풀고 채워라.
+
+```yaml
+context: |
+  Tech stack: <언어/프레임워크>
+  테스트: <실제 명령>
+  빌드: <실제 명령>
+  관례: <있으면>
+```
+
+**여기가 프로젝트 사정이 모든 에이전트에게 전달되는 유일한 통로다.**
+에이전트 파일을 고치는 것보다 이게 낫다. 비워 두면 빈 프로젝트에서 analyzer가 스택을 발명한다.
 
 ## 쓰는 법
 
@@ -83,9 +119,10 @@ cp /tmp/init-SDD/.claude/commands/orchestra.md .claude/commands/
 ```
 
 그냥 평소처럼 말하면 된다. 오케스트레이터가 크기를 재고 알맞은 경로로 보낸다.
-직접 파이프라인을 부르고 싶으면 `/orchestra <할 일>`.
+직접 파이프라인을 부르고 싶으면 `/orchestra` 를 쓴다.
 
-진행 중에 사용자가 답해야 하는 지점은 **네 곳**이다.
+사용자가 **반드시** 답해야 하는 지점은 네 곳이고, 상황에 따라 더 묻는다
+(진행 중 change가 2개 이상일 때, 에이전트가 질문을 올렸을 때, 두 번 고쳐도 안 될 때, 중간에 취소할 때).
 
 1. 요구사항 정리 후 — **범위 밖** 확인 ("그것도 해줘" 할 기회)
 2. **★ 방안 선택** — 3가지 안과 각각의 장단점, 추천안을 보고 고른다
@@ -93,6 +130,15 @@ cp /tmp/init-SDD/.claude/commands/orchestra.md .claude/commands/
 4. 커밋 직전 — diff 요약을 보고 확인한다
 
 작은 수정(오타, 주석)은 이 관문을 전부 건너뛰고 바로 처리된다.
+
+### 일의 크기에 따라 경로가 갈린다
+
+| 일 | 경로 | 묻는 횟수 |
+|---|---|---|
+| 오타·주석·이름 변경 (**동작 안 바뀜**) | worker → finalizer | 0 |
+| 원인이 뻔한 버그 | preparer → designer → worker → 리뷰 2개 → finalizer | 1~2 |
+| "이거 왜 이래?" 조사 | analyzer 1번 | 0 |
+| 새 기능·리팩터링 | 정식 파이프라인 (서브에이전트 7번) | 4 |
 
 ## 7개 서브에이전트
 
@@ -121,6 +167,7 @@ cp /tmp/init-SDD/.claude/commands/orchestra.md .claude/commands/
 | `design.md` | designer | 어떻게 (조건부) |
 | `tasks.md` | designer | 작업 목록 |
 | `review.md` | reviewer | 판정 (finalizer가 읽어 확인) |
+| `.openspec.yaml` | preparer | spec에 남길 게 없는 change 표시 (`skip_specs`) |
 
 작업이 끝나면 `finalizer`가 델타를 `openspec/specs/` 의 메인 spec에 병합한다.
 그게 이 프로젝트의 **누적된 사양**이 된다.
@@ -140,8 +187,23 @@ cp /tmp/init-SDD/.claude/commands/orchestra.md .claude/commands/
   모든 에이전트의 첫 명령이 실패한다.
 - **서브에이전트는 사용자에게 직접 물을 수 없다.** 질문은 보고서에 담겨 오케스트레이터를 거친다.
   그래서 방안 선택 같은 관문이 메인 세션에 있다.
+- **서브에이전트에게는 `Skill` 도구가 없을 수 있다.** 그래서 에이전트들은 OpenSpec 스킬을
+  "부르는" 대신 `.claude/skills/<이름>/SKILL.md` 를 읽고 그 절차를 따르도록 되어 있다.
+  결과는 같다. 그래서 `openspec init` 으로 그 문서들을 깔아 두는 게 중요하다.
 - **되돌릴 수 없는 일은 에이전트가 하지 않는다.** `git push`, `openspec archive`,
   메인 spec 파일 삭제는 사용자가 명시적으로 요청해야 한다.
+- **정식 경로 한 번은 서브에이전트 7번 호출이다** (analyzer·designer·reviewer가 opus).
+  느리고 토큰을 많이 쓴다. 오타 수정에는 자동으로 경량 경로가 쓰인다.
+  비용이 부담되면 그 세 파일의 `model:` 을 sonnet으로 내려라.
+- **대화형 세션에서만 제대로 돈다.** 방안 선택 관문이 대화형 질문이라
+  `claude -p` 같은 비대화형 실행에서는 관문이 뜨지 않는다.
+- **기존 코드가 있는 프로젝트는 처음에 spec이 0개다. 그게 맞다.** change를 하나씩 돌리면서
+  건드리는 부분만 spec으로 쌓인다. 코드베이스 전체를 미리 문서화하지 않아도 된다.
+- `openspec init` 이 `/opsx:propose` 같은 명령 6개도 깔아 준다.
+  **그걸 직접 쓰면 방안 선택 관문과 리뷰 단계가 사라진다.** 평소엔 그냥 말로 시켜라.
+- 에이전트 파일과 이 문서는 **한국어**다. 파이프라인도 한국어로 말한다.
+  다른 언어로 쓰려면 `.claude/agents/*.md` 와 `.claude/skills/orchestra/SKILL.md` 를 번역하고,
+  산출물 언어는 `openspec init --language <언어>` 로 정한다.
 - OpenSpec CLI 1.12 기준으로 만들었다. 버전이 올라 명령이 바뀌면, 에이전트는
   `.claude/skills/openspec-*/SKILL.md` (openspec이 직접 깔아준 문서)를 정답으로 삼도록
   되어 있어서 대부분 자동으로 따라간다.
@@ -149,3 +211,11 @@ cp /tmp/init-SDD/.claude/commands/orchestra.md .claude/commands/
   대상 프로젝트에서는 복사하지 말고 `openspec init --tools claude`로 직접 만들어라
   (위 설치 절차 3번). 그래야 설치된 CLI 버전과 맞는 문서가 깔린다.
   CLI를 올린 뒤에는 `openspec update`로 그 문서들을 갱신해라.
+- **버전 확인:**
+  ```bash
+  openspec --version
+  grep generatedBy .claude/skills/openspec-propose/SKILL.md
+  ```
+  둘이 다르면 에이전트 파일에 적힌 CLI 세부(산출물 의존 관계, 에러 문구, JSON 키)가 틀릴 수 있다.
+  그때 정답은 **`openspec status --change <이름> --json` 의 실제 출력**이다.
+  에이전트 파일도 전부 "경로와 상태는 CLI에서 얻는다. 짐작하거나 하드코딩하지 마라"고 말한다.

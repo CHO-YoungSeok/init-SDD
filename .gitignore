@@ -1,6 +1,5 @@
-# OpenSpec 로컬 상태 (개인 작업 뷰, 공유하지 않는다)
-.openspec-local/
-**/workset.json
+# Claude Code 개인 설정 (공유하지 않는다)
+.claude/settings.local.json
 
 # OS / 편집기
 .DS_Store
@@ -8,6 +7,3 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
-
-# Claude Code 개인 설정
-.claude/settings.local.json
