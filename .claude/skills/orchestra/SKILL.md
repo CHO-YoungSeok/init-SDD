@@ -37,6 +37,8 @@ description: 서브 에이전트 지휘자. 사용자와 대화하며 preparer �
    ↓
 [reviewer]  요구사항/설계/작업 검증
    ↓  반려면 → worker로 되돌린다 (최대 2번, 그 다음엔 사용자에게 묻는다)
+[regression-verifier]  기존 동작이 깨지지 않았는지 (커밋 직전 관문)
+   ↓  회귀 있으면 → worker로 되돌린다
 [finalizer] 커밋 + spec sync
    ↓
 사용자에게 결과 보고
@@ -53,7 +55,8 @@ description: 서브 에이전트 지휘자. 사용자와 대화하며 preparer �
 | analyzer | `openspec-explore` | 분석 + 방안 3가지 (산출물 안 씀) |
 | designer | `openspec-propose`(읽기만) / 고칠 때는 **`openspec-update-change` 호출** | specs 델타 + design.md + tasks.md |
 | worker | **`openspec-apply-change` 호출** | 구현 + tasks 체크 |
-| reviewer | 스킬 호출 없음 (기준 확인용으로만 읽음) | 검증 |
+| reviewer | 스킬 호출 없음 (기준 확인용으로만 읽음) | 요구사항/설계 준수 검증 |
+| regression-verifier | 스킬 호출 없음 | 기존 동작 회귀 검증 (테스트/빌드/린트) |
 | finalizer | **`openspec-sync-specs` 호출** / 요청 시 **`openspec-archive-change` 호출** | 커밋 + spec 갱신 |
 
 **preparer와 designer가 `openspec-propose`를 "부르지 않고 읽는" 이유:**
@@ -135,6 +138,15 @@ Agent(subagent_type: "reviewer", prompt: "change 이름: <이름>\nworker 보고
 - 되돌리기는 **최대 2번**. 그래도 안 되면 멈추고 사용자에게 상황을 설명한다.
 - 통과면 다음으로.
 
+### 6.5 regression-verifier 호출 (커밋 직전 관문)
+```
+Agent(subagent_type: "regression-verifier", prompt: "change 이름: <이름>\n만진 파일: <목록>\n이번 변경 때문에 기존 동작이 깨지지 않았는지 검증하라.")
+```
+- reviewer와 **동시에 띄워도 된다.** 둘 다 읽기 전용이고 보는 곳이 다르다.
+  (reviewer = 새로 한 일이 맞나 / regression-verifier = 안 건드린 데가 멀쩡한가)
+- 회귀가 나오면 그 막음 항목을 worker에게 되돌린다.
+- 테스트를 못 돌렸다고 하면 **그 사실을 사용자에게 그대로 알린다.** 통과로 치지 마라.
+
 ### 7. finalizer 호출
 ```
 Agent(subagent_type: "finalizer", prompt: "change 이름: <이름>\nreviewer 판정: 통과\n커밋하고 spec을 갱신하라. 푸시는 하지 마라.")
@@ -153,15 +165,15 @@ Agent(subagent_type: "finalizer", prompt: "change 이름: <이름>\nreviewer 판
 
 전체를 항상 돌릴 필요는 없다. 이럴 땐 줄인다.
 
-- **오타/한 줄 수정** → worker만. (reviewer도 생략 가능)
-- **버그 수정(원인이 뻔함)** → preparer → worker → reviewer → finalizer (analyzer/designer 생략)
+- **오타/한 줄 수정** → worker만. (reviewer, regression-verifier 생략 가능)
+- **버그 수정(원인이 뻔함)** → preparer → designer(tasks만) → worker → reviewer + regression-verifier → finalizer (analyzer 생략)
 - **"이거 왜 이래?" 같은 조사 요청** → analyzer만.
-- **이미 change가 있고 구현만 남음** → worker → reviewer → finalizer
+- **이미 change가 있고 구현만 남음** → worker → reviewer + regression-verifier → finalizer
 - 무엇을 건너뛰었는지 사용자에게 한 줄로 알린다.
 
 ## 여러 에이전트 동시에 띄우기
 
 - 서로 독립적인 일이면 **한 번의 메시지에 여러 Agent 호출**을 담는다. 그래야 같이 돌아간다.
-- 같이 돌려도 되는 예: 서로 다른 모듈을 만지는 worker들, reviewer + 문서 작업.
+- 같이 돌려도 되는 예: **reviewer + regression-verifier** (둘 다 읽기 전용, 보는 곳이 다르다), 서로 다른 모듈을 만지는 worker들.
 - **같이 돌리면 안 되는 예:** 같은 파일을 만지는 worker 둘, 아직 안 끝난 작업의 reviewer.
 - 결과를 기다리는 중에 그 일을 네가 다시 하지 마라.
