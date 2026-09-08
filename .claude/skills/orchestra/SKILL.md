@@ -29,8 +29,9 @@ description: 서브 에이전트 지휘자. 사용자와 대화하며 preparer �
 산문을 눈으로 훑어 "대체로 통과인가?" 판단하지 마라. 첫 줄이 없으면 그 에이전트를 다시 불러라.
 
 ```
-RESULT: 통과 | change=add-2fa | blockers=0 | should_fix=2 | notes=1
+RESULT: 통과 | change=add-2fa | scope=만진파일 | blockers=0 | should_fix=2 | notes=1
 ```
+`scope=전체diff`가 오면 만진 파일 목록을 안 실어 보냈다는 뜻이다. 다음부터는 실어 보내라.
 
 **상태 값이 `준비완료`·`분석완료`·`설계완료`·`구현완료`·`통과`·`마무리완료` 중 하나가 아니면
 (`준비중단`·`분석중단`·`설계중단`·`구현막힘`·`반려`·`회귀있음`·`검증못함`·`마무리중단`)
@@ -68,9 +69,12 @@ worker는 `모드: 재작업`으로, finalizer는 "커밋 여부를 먼저 확�
 
 ## 어떤 단계가 어떤 스킬을 타는가
 
-**중요 (실측):** 이 환경의 서브 에이전트에게는 `Skill` 도구가 없을 수 있다. 그래서 에이전트들은
-스킬을 "부르는" 대신 **`.claude/skills/<이름>/SKILL.md` 를 Read로 읽고 그 절차를 따르도록** 되어 있다.
-결과는 같다. "스킬을 못 불러서 멈췄다"는 보고가 오면 그 에이전트 파일이 낡은 것이다.
+**중요:** preparer·analyzer·designer·worker·finalizer는 OpenSpec 스킬을 "부르는" 대신
+**`.claude/skills/<이름>/SKILL.md` 를 Read로 읽고 그 절차를 그대로 따르도록** 되어 있다.
+이유: 6개 openspec 스킬은 frontmatter에 `allowed-tools: Bash(openspec:*)` 를 선언한다.
+스킬을 실제로 호출하면 그 스킬이 도는 동안 쓸 수 있는 도구가 `openspec` 셸 명령 하나로 좁혀져서
+산출물 파일도 못 쓰고 코드도 못 고친다. 읽어서 따르면 결과는 같고 도구 제약이 없다.
+"스킬을 못 불러서 멈췄다"는 보고가 오면 그 에이전트 파일이 낡은 것이다.
 
 | 단계 | 따르는 절차 문서 | 하는 일 |
 |---|---|---|
@@ -233,6 +237,8 @@ Agent(subagent_type: "regression-verifier", prompt: "change 이름: <이름>\n�
 ```
 - **`만진 파일` 목록을 반드시 실어 보낸다.** 없으면 두 에이전트가 전체 diff를 보고
   다른 change의 정상 변경을 blocker로 올린다.
+- **worker를 여러 개 띄웠으면 각 보고서의 "만진 파일" 목록을 합쳐서 보낸다.** 하나만 보내면
+  나머지 worker가 만든 파일이 검사 범위 밖으로 빠진다.
 - regression-verifier가 `RESULT: 검증못함`을 내면 **그 사실을 사용자에게 그대로 알린다.**
   통과로 치지 마라. finalizer는 이 상태에서 커밋을 거부한다.
   사용자가 그래도 진행하겠다고 하면 finalizer 프롬프트에 `회귀 미검증 승인: 예`를 넣는다.
@@ -277,6 +283,10 @@ Agent(subagent_type: "finalizer", prompt: "change 이름: <이름>\nstore: <id>\
   - `반려` / `review.md없음` / `회귀있음` → 그 앞 단계로 되돌아간다. 커밋을 강요하지 마라
 - archive는 되돌릴 수 없어서 finalizer가 하지 않는다. finalizer가 올린 조사 결과를 사용자에게
   보여주고, 사용자가 원하면 그때 별도로 지시한다.
+  커밋까지 끝난 change를 archive 하지 않으면 `openspec list`에 계속 활성으로 남는다
+  (`complete 18/18` 상태로). 그러면 다음 작업의 preparer가 그걸 "겹치는 진행 중 change"로
+  올리고, 이미 끝난 일에 대해 매번 "먼저 끝낼까요, 병행할까요"를 묻게 된다. 사이클이 쌓이기
+  전에, 커밋이 끝나면 정리(archive)할지 한 번 권해라.
 
 ---
 
