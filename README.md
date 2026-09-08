@@ -132,3 +132,7 @@ cp /tmp/init-SDD/.claude/commands/orchestra.md .claude/commands/
 - OpenSpec CLI 1.12 기준으로 만들었다. 버전이 올라 명령이 바뀌면, 에이전트는
   `.claude/skills/openspec-*/SKILL.md` (openspec이 직접 깔아준 문서)를 정답으로 삼도록
   되어 있어서 대부분 자동으로 따라간다.
+- **이 저장소의 `.claude/skills/openspec-*` 은 `openspec init`이 만든 사본이다.**
+  대상 프로젝트에서는 복사하지 말고 `openspec init --tools claude`로 직접 만들어라
+  (위 설치 절차 3번). 그래야 설치된 CLI 버전과 맞는 문서가 깔린다.
+  CLI를 올린 뒤에는 `openspec update`로 그 문서들을 갱신해라.

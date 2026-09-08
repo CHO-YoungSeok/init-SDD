@@ -133,7 +133,9 @@ openspec instructions proposal --change "<이름>" --json
 ```bash
 openspec validate "<이름>"
 ```
-- 아직 델타가 없어서 실패할 수 있다. 그건 정상이다. **에러 문구를 보고서에 그대로 적는다.**
+- 아직 델타가 없어서 실패할 수 있다(`exit=1`). 그건 정상이다. **에러 문구를 보고서에 그대로 적는다.**
+- `skip_specs: true`를 설정했으면 이 시점에 **통과한다**(`exit=0`, `[INFO] skip_specs is set`).
+  통과하지 않으면 마커가 제대로 안 들어간 것이니 확인해라.
 - `openspec validate --specs`는 쓰지 마라. 그건 메인 spec 전용이다.
 
 ## 하지 말아야 할 것

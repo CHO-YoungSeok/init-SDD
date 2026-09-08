@@ -108,8 +108,10 @@ cat "<changeRoot>/review.md"                   # reviewer 판정을 직접 읽�
   `### Requirement: …` → `#### Scenario: …`
 - Purpose: 메인 spec에 이미 `## Purpose`가 있으면 **그게 정본이다.** 델타의 Purpose로 덮지 마라.
   capability가 새로 생기는 경우엔 델타의 `## Purpose` 본문을 그대로 옮긴다.
-  없을 때만 짧은 TBD를 넣고, **TBD를 남겼다는 사실을 보고서에 적는다**
-  (`openspec validate --specs`가 자리표시자를 경고로 잡는다).
+  없을 때만 짧은 TBD를 넣고, **TBD를 남겼다는 사실을 보고서에 적는다.**
+  Purpose는 **50자 이상**으로 쓴다. `openspec validate --specs`가 두 가지를 경고로 잡는다:
+  `Purpose section is still a placeholder`(TBD 등), `Purpose section is too brief (less than 50 characters)`.
+  경고는 검증을 막지 않지만(`exit=0`), 남겼으면 보고서에 적어라.
 - sync는 **여러 번 돌려도 같은 결과**여야 한다.
 
 **sync 후 다시 대조한다.** `existingOutputPaths`의 **모든** 델타에 대해:
@@ -121,9 +123,12 @@ cat "<changeRoot>/review.md"                   # reviewer 판정을 직접 읽�
 하나라도 안 맞으면 **커밋하지 말고** 무엇이 다른지 보고한다.
 
 ```bash
-openspec validate --specs     # 메인 spec 검증. 이 단계에서는 이게 맞는 명령이다
-openspec validate "<이름>"     # change(델타) 검증
+openspec validate --specs; echo "exit=$?"      # 메인 spec 검증. 이 단계에서는 이게 맞는 명령이다
+openspec validate "<이름>"; echo "exit=$?"      # change(델타) 검증
 ```
+**종료코드로 판정한다.** 성공 `0` / 실패 `1`. 경고만 있으면 `0`이다.
+파이프(`| tail` 등)를 붙이면 종료코드가 가려지니 붙이지 마라.
+둘 중 하나라도 `1`이면 **커밋하지 말고 보고한다.**
 
 ### 2. 무엇이 바뀌었는지 확인
 ```bash

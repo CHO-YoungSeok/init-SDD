@@ -74,6 +74,10 @@ openspec validate "<이름>" --strict
 openspec status --change "<이름>"
 ```
 - **`--specs`는 쓰지 마라.** 그건 메인 spec만 본다. 메인이 비어 있으면 통과처럼 보인다.
+- **종료코드로 판정한다.** 성공 `0` / 실패 `1`. 파이프를 붙이면 종료코드가 가려진다.
+  ```bash
+  openspec validate "<이름>" --strict; echo "exit=$?"
+  ```
 - 실패하면 **[막음]**으로 올리고 출력을 그대로 붙인다.
 
 ### 3. 실제 변경을 본다 — 범위를 좁혀서
