@@ -24,25 +24,38 @@ Claude Code에게 큰 일을 그냥 맡기면, 분석과 설계와 구현이 한
 
 ## 설치
 
-```bash
-# 1) 이 저장소를 받는다
-git clone https://github.com/CHO-YoungSeok/init-SDD.git /tmp/init-SDD
+### 방법 1 — 스크립트 (권장)
 
-# 2) 대상 프로젝트로 간다
+```bash
+git clone https://github.com/CHO-YoungSeok/init-SDD.git /tmp/init-SDD
+cd /path/to/your-project
+bash /tmp/init-SDD/install.sh --dry-run   # 무엇을 할지 먼저 본다
+bash /tmp/init-SDD/install.sh             # 설치
+```
+
+스크립트는 **기존 파일을 절대 덮어쓰지 않는다.** 이미 있으면 건너뛰고 끝에 목록으로 알려준다.
+`CLAUDE.md`는 덮어쓰지 않고 **끝에 덧붙인다.** 두 번 실행해도 안전하다.
+
+### 방법 2 — 손으로
+
+```bash
 cd /path/to/your-project
 
-# 3) OpenSpec을 초기화한다 (openspec/ 디렉터리와 공식 스킬을 만든다)
+# OpenSpec 초기화 (openspec/ 디렉터리와 공식 스킬 6개를 만든다)
 openspec init --tools claude
 
-# 4) 에이전트와 지휘 스킬을 복사한다
+# 에이전트와 지휘 스킬 복사
 cp -r /tmp/init-SDD/.claude/agents .claude/
 cp -r /tmp/init-SDD/.claude/skills/orchestra .claude/skills/
 cp /tmp/init-SDD/.claude/commands/orchestra.md .claude/commands/
 ```
 
+`.claude/skills/openspec-*` 은 복사하지 마라. `openspec init`이 설치된 CLI 버전에 맞는 것을 만든다.
+
 ### CLAUDE.md 는 복사하지 말고 **합쳐라**
 
 대상 프로젝트에 이미 `CLAUDE.md`가 있으면 덮어쓰면 안 된다. 아래 내용을 **끝에 덧붙인다.**
+(`install.sh`는 이걸 알아서 해준다)
 
 ```markdown
 # 작업 방식
