@@ -74,32 +74,38 @@ for f in "$SRC"/.claude/agents/*.md; do
   copy_if_absent ".claude/agents/$(basename "$f")" ".claude/agents/$(basename "$f")"
 done
 copy_if_absent ".claude/skills/orchestra" ".claude/skills/orchestra"
+copy_if_absent ".claude/skills/agent-model-tier" ".claude/skills/agent-model-tier"
 copy_if_absent ".claude/settings.json" ".claude/settings.json"
 
 # --- 4. CLAUDE.md 는 합친다 ---
 say ""
 say "4. CLAUDE.md"
-SNIPPET='# 작업 방식
+# 조각 원본은 이 저장소 CLAUDE.md 의 마커 구획 한 곳뿐이다. 여기에 문구를 베껴 두지 않는다.
+MARK_BEGIN='<!-- init-SDD:begin -->'
+MARK_END='<!-- init-SDD:end -->'
+EXTRACT_CMD="sed -n '/init-SDD:begin/,/init-SDD:end/p' \"$SRC/CLAUDE.md\""
+# 예전 방식(마커가 없던 때)으로 깔았는지 짐작하는 데만 쓰는 낱말. 한 곳에만 적는다.
+OLD_WORD='오케스트레이터'
 
-이 프로젝트는 SDD(사양 주도 개발) 파이프라인으로 일한다.
+[[ -f "$SRC/CLAUDE.md" ]] || fail "원본이 없다: $SRC/CLAUDE.md . init-SDD 저장소를 통째로 받았는지 확인해라."
+SNIPPET="$(sed -n "/$MARK_BEGIN/,/$MARK_END/p" "$SRC/CLAUDE.md")"
+# 빈 값을 붙이면 "성공"이라 말하면서 아무 지시문도 안 들어간다. 그러면 멈춘다.
+[[ -n "$SNIPPET" ]] || fail "CLAUDE.md 에서 init-SDD 구획을 뽑지 못했다. $SRC/CLAUDE.md 의 마커($MARK_BEGIN ~ $MARK_END)를 확인해라."
 
-메인 세션은 **오케스트레이터**다. 사용자와 대화하고 지휘만 한다.
-분석·설계·파일 수정·리뷰·회귀 검증·커밋은 **모두 `.claude/agents/` 의 서브에이전트에게 위임한다.**
-
-순서: `preparer` → `analyzer` → **★사용자가 방안 선택** → `designer` → `worker`
-→ `reviewer` + `regression-verifier`(동시) → `finalizer`
-
-지휘 절차는 `orchestra` 스킬에 있다. 스킬이 안 불려오면
-`.claude/skills/orchestra/SKILL.md` 를 Read로 직접 읽고 그대로 따른다.
-
-**이 파일은 서브에이전트도 물려받아 읽는다. 위 위임 규칙은 메인 세션에게 하는 말이며,
-각 서브에이전트는 자기 파일(`.claude/agents/<이름>.md`)의 지침을 따른다.**'
-
+# 판별은 마커로 한다. 낱말은 사람이 쓰는 말이라 지문으로 약하다.
 if [[ ! -f "$DST/CLAUDE.md" ]]; then
   say "   없다. 새로 만든다."
   if [[ $DRY -eq 0 ]]; then printf '%s\n' "$SNIPPET" > "$DST/CLAUDE.md"; fi
-elif grep -q '오케스트레이터' "$DST/CLAUDE.md" 2>/dev/null; then
-  say "   이미 위임 규칙이 있다. 건너뛴다."
+elif grep -qF "$MARK_BEGIN" "$DST/CLAUDE.md" 2>/dev/null; then
+  say "   이미 들어가 있다 (마커 $MARK_BEGIN 를 찾았다). 건너뛴다."
+elif grep -qF "$OLD_WORD" "$DST/CLAUDE.md" 2>/dev/null; then
+  # 예전 방식으로 깔았을 수도 있고, 사용자가 우연히 그 낱말을 썼을 수도 있다.
+  # 스크립트가 둘을 구별할 수 없으므로 짐작하지 않고 넣지 않은 채 사실만 알린다.
+  say "   넣지 않았다. 마커는 없는데 '$OLD_WORD' 라는 낱말이 이미 있다."
+  say "     예전 방식으로 이미 깔았거나, 사용자가 우연히 그 낱말을 쓴 것일 수 있다."
+  say "     스크립트가 둘을 구별할 수 없어서 조각을 넣지 않았다. 직접 확인해라."
+  say "     구획을 뽑아 보는 명령: $EXTRACT_CMD"
+  say "     넣어야 한다면 그 뒤에 >> \"$DST/CLAUDE.md\" 를 붙여 끝에 덧붙여라."
 else
   say "   이미 있다. 끝에 덧붙인다 (기존 내용은 그대로 둔다)."
   if [[ $DRY -eq 0 ]]; then printf '\n\n%s\n' "$SNIPPET" >> "$DST/CLAUDE.md"; fi
@@ -112,6 +118,21 @@ if [[ $DRY -eq 1 ]]; then say "   (--dry-run: 확인은 건너뛴다)"; fi
 if [[ $DRY -eq 0 ]]; then
   N_AGENTS=$(ls "$DST/.claude/agents"/*.md 2>/dev/null | wc -l | tr -d ' ')
   say "   에이전트: ${N_AGENTS}개 (7이어야 한다)"
+  # 우리 스킬 2개 (지휘 + 모델 등급). 하나라도 없으면 제품이 덜 깔린 것이다.
+  OURS_MISSING=()
+  for ours in orchestra agent-model-tier; do
+    if [[ -f "$DST/.claude/skills/$ours/SKILL.md" ]]; then
+      say "   $ours 스킬: ok"
+    else
+      OURS_MISSING+=("$ours")
+    fi
+  done
+  if [[ ${#OURS_MISSING[@]} -gt 0 ]]; then
+    say "   경고: init-SDD 스킬이 빠졌다: ${OURS_MISSING[*]}"
+    for ours in "${OURS_MISSING[@]}"; do
+      say "     원본: $SRC/.claude/skills/$ours"
+    done
+  fi
   MISSING=()
   for sk in explore propose update-change apply-change sync-specs archive-change; do
     [[ -f "$DST/.claude/skills/openspec-$sk/SKILL.md" ]] || MISSING+=("openspec-$sk")
