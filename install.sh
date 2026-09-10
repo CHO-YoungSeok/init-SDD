@@ -166,6 +166,7 @@ say "     남아 YAML이 깨지고, openspec은 경고만 내고 그 파일을 �
 say "     적은 뒤 'openspec context' 로 Warning 이 없는지 확인해라."
 say "  2. .gitignore 에 .claude/settings.local.json 한 줄을 더해라 (개인 설정)."
 say "  3. Claude Code를 새 세션으로 다시 열어라 (새 에이전트·스킬이 잡힌다)."
+say "  4. 개인 설정을 공유 저장소에 남기고 싶지 않으면 링크 방식(init-sdd 스킬)도 있다 — 고르는 안내는 $SRC/README.md 의 '먼저 고른다' 절에 있다."
 say ""
 say "그 다음 그냥 할 일을 말하면 된다. 예: \"로그인 기능 추가해줘\""
 say "파이프라인을 직접 부르려면: /orchestra <할 일>"
