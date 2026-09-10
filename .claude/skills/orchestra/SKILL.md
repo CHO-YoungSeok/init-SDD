@@ -281,12 +281,20 @@ Agent(subagent_type: "finalizer", prompt: "change 이름: <이름>\nstore: <id>\
   - `sync불일치` → finalizer를 다시 부른다 (무엇이 안 맞는지 보고서에 있다)
   - `브랜치불일치` → 지금 브랜치를 확인하고, 맞는 브랜치로 옮긴 뒤 다시 부른다
   - `반려` / `review.md없음` / `회귀있음` → 그 앞 단계로 되돌아간다. 커밋을 강요하지 마라
-- archive는 되돌릴 수 없어서 finalizer가 하지 않는다. finalizer가 올린 조사 결과를 사용자에게
-  보여주고, 사용자가 원하면 그때 별도로 지시한다.
+- archive는 되돌릴 수 없어서 기본적으로 finalizer가 하지 않는다. finalizer가 올린 조사 결과를
+  사용자에게 보여주고, **사용자가 승인하면** finalizer를 다시 부르는 프롬프트에
+  `archive: 해도 됨`을 넣는다 (`push: 해도 됨`과 같은 방식). 이게 승인을 전달하는 유일한 통로다 —
+  없으면 finalizer는 조사만 하고 진행하지 않는다.
+  change 이름은 **글자 그대로** 적는다. "알아서 정리해라"는 보내지 마라.
   커밋까지 끝난 change를 archive 하지 않으면 `openspec list`에 계속 활성으로 남는다
   (`complete 18/18` 상태로). 그러면 다음 작업의 preparer가 그걸 "겹치는 진행 중 change"로
   올리고, 이미 끝난 일에 대해 매번 "먼저 끝낼까요, 병행할까요"를 묻게 된다. 사이클이 쌓이기
   전에, 커밋이 끝나면 정리(archive)할지 한 번 권해라.
+
+  이미 커밋이 끝난 change를 나중에 archive만 할 때:
+  ```
+  Agent(subagent_type: "finalizer", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\narchive: 해도 됨\npush: 하지 마라\n\n이 change를 archive하라.")
+  ```
 
 ---
 

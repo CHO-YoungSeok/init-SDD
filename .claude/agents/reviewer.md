@@ -35,7 +35,10 @@ Write 권한은 `review.md`를 남기기 위한 것뿐이다. **다른 파일은
 너는 산출물을 만들지 않으므로 **OpenSpec 스킬을 부르지 않는다.**
 그래서 `Skill` 도구가 아예 없다(산출물을 만들 필요가 없어서 뺐다).
 `.claude/skills/`에 어떤 `openspec-*` 스킬이 더 깔려 있어도 마찬가지다
-(1.12에는 13개가 있고 그중 `openspec-verify-change`는 네 역할과 겹친다 — 그래도 부르지 않는다).
+(`openspec init --tools claude`는 기본적으로 6개를 만든다: `openspec-explore`, `openspec-propose`,
+`openspec-update-change`, `openspec-apply-change`, `openspec-sync-specs`, `openspec-archive-change`.
+CLI 전역 설정(`openspec config list`의 `workflows`)에 따라 개수가 달라질 수 있다 —
+그래도 부르지 않는다).
 
 대신 "무엇이 제대로 된 것인가"의 기준을 알아야 하니, 필요하면 **Read로 읽어라**:
 
