@@ -156,6 +156,14 @@ sed -n '/<!-- init-SDD:begin -->/,/<!-- init-SDD:end -->/p' "$SRC/CLAUDE.md"
 - **AND** `orchestra`와 `agent-model-tier` 스킬이 깔렸는지 확인한 결과가 나온다
 - **AND** openspec 공식 스킬 6개 중 빠진 것이 있으면 그 이름과 복구 명령을 알려 준다
 
+#### Scenario: 임시 프로젝트에 8개 에이전트가 실제로 깔린다
+
+- **WHEN** `mktemp -d`로 만든 빈 임시 프로젝트에서 `bash install.sh`를 실제로 돌린다
+  (이 저장소나 `~/work-space/`가 아닌 임시 디렉터리에서)
+- **THEN** `.claude/agents/*.md`가 8개 생기고, 그 안에 `code-explorer.md`가 있다
+- **AND** 설치 확인 절에 "에이전트: 8개 (8이어야 한다)"가 출력된다
+
+
 ### Requirement: 이미 있는 파일을 덮어써서는 안 된다
 
 `install.sh`는 대상 프로젝트에 같은 이름의 파일이 이미 있으면 **덮어쓰지 않고 건너뛰어야

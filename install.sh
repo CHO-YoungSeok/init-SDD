@@ -70,8 +70,8 @@ copy_if_absent() {  # $1=원본 상대경로  $2=대상 상대경로
   fi
 }
 
-for f in "$SRC"/.claude/agents/*.md; do
-  copy_if_absent ".claude/agents/$(basename "$f")" ".claude/agents/$(basename "$f")"
+for agent in preparer analyzer designer worker reviewer regression-verifier finalizer code-explorer; do
+  copy_if_absent ".claude/agents/$agent.md" ".claude/agents/$agent.md"
 done
 copy_if_absent ".claude/skills/orchestra" ".claude/skills/orchestra"
 copy_if_absent ".claude/skills/agent-model-tier" ".claude/skills/agent-model-tier"
@@ -117,7 +117,7 @@ say "5. 설치 확인"
 if [[ $DRY -eq 1 ]]; then say "   (--dry-run: 확인은 건너뛴다)"; fi
 if [[ $DRY -eq 0 ]]; then
   N_AGENTS=$(ls "$DST/.claude/agents"/*.md 2>/dev/null | wc -l | tr -d ' ')
-  say "   에이전트: ${N_AGENTS}개 (7이어야 한다)"
+  say "   에이전트: ${N_AGENTS}개 (8이어야 한다)"
   # 우리 스킬 2개 (지휘 + 모델 등급). 하나라도 없으면 제품이 덜 깔린 것이다.
   OURS_MISSING=()
   for ours in orchestra agent-model-tier; do

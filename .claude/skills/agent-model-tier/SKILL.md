@@ -54,6 +54,9 @@ regression-verifier·finalizer)이 haiku로 내려간 것뿐이다. `lower`는 �
 모델 값은 항상 짧은 이름(`opus` / `sonnet` / `haiku`)만 쓴다. 날짜나 버전이 붙은 전체
 모델 ID는 절대 적지 않는다 — 버전이 올라가면 그 값이 낡아서 못 쓰게 된다.
 
+**주의:** `code-explorer` 에이전트는 이 표 밖에 있고, 항상 `haiku`로 고정된다. 이 스킬이
+바꾸는 대상이 아니다.
+
 ## 지금 등급 확인
 
 등급을 적용하기 전에, 또는 사용자가 "지금 모델 등급 뭐야"라고 물으면 먼저 이 순서로
@@ -61,7 +64,7 @@ regression-verifier·finalizer)이 haiku로 내려간 것뿐이다. `lower`는 �
 
 1. 7개 파일을 하나씩 읽어 `^model:` 로 시작하는 줄의 값을 뽑는다.
    ```bash
-   for f in .claude/agents/*.md; do echo "$(basename "$f") $(grep -m1 '^model:' "$f")"; done
+   for f in .claude/agents/preparer.md .claude/agents/analyzer.md .claude/agents/designer.md .claude/agents/worker.md .claude/agents/reviewer.md .claude/agents/regression-verifier.md .claude/agents/finalizer.md; do echo "$(basename "$f") $(grep -m1 '^model:' "$f")"; done
    ```
 2. 뽑은 7개 값을 위 등급 표의 `normal` / `semi-lower` / `lower` 세 열과 각각 대조한다.
 3. **7개 값이 세 표 중 하나와 정확히, 한 칸도 틀리지 않고 같으면** 지금 등급은 그 표의
@@ -105,12 +108,12 @@ regression-verifier·finalizer)이 haiku로 내려간 것뿐이다. `lower`는 �
 2. **frontmatter가 온전한지** — 각 파일이 `---` 두 줄로 열리고 닫히며, `name:`,
    `description:`, `model:`, `tools:` 네 키를 모두 그대로 갖고 있는지 확인한다.
    ```bash
-   for f in .claude/agents/*.md; do sed -n '1,/^---$/{/^---$/!p}' "$f" | head -20; echo "--- $f 끝"; done
+   for f in .claude/agents/preparer.md .claude/agents/analyzer.md .claude/agents/designer.md .claude/agents/worker.md .claude/agents/reviewer.md .claude/agents/regression-verifier.md .claude/agents/finalizer.md; do sed -n '1,/^---$/{/^---$/!p}' "$f" | head -20; echo "--- $f 끝"; done
    ```
 3. **`model:` 줄이 파일마다 정확히 하나인지** — 아래 명령의 두 번째 칸이 모든 파일에서
    1이어야 한다.
    ```bash
-   for f in .claude/agents/*.md; do echo "$(basename "$f") $(grep -c '^model:' "$f")"; done
+   for f in .claude/agents/preparer.md .claude/agents/analyzer.md .claude/agents/designer.md .claude/agents/worker.md .claude/agents/reviewer.md .claude/agents/regression-verifier.md .claude/agents/finalizer.md; do echo "$(basename "$f") $(grep -c '^model:' "$f")"; done
    ```
 
 ## 낮추면 무엇이 나빠지는가

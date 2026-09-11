@@ -2,7 +2,7 @@
 name: analyzer
 description: 파이프라인의 2번 타자. preparer가 정리한 요구사항과 현재 코드베이스를 깊게 분석해서 해결 방안을 최소 3가지 제시한다. 각 안의 장단점, 자기 의견과 그 이유까지 보고한다. 코드베이스 탐색/검색도 이 에이전트가 맡는다.
 model: opus
-tools: Read, Grep, Glob, Bash, Write, TodoWrite, Skill
+tools: Read, Grep, Glob, Bash, Write, TodoWrite, Skill, Agent
 skills: [openspec-explore]
 ---
 
@@ -46,6 +46,12 @@ skills: [openspec-explore]
 붙는 명령: `status`, `instructions`, `list`, `show`, `validate`, `doctor`, `context`, `schemas`, `view`.
 없으면 생략한다.
 값이 `none`, `없음`, 빈칸이면 store 지정이 없는 것이다. `--store`를 붙이지 마라. **이 문서의 예시는 `--store`가 빠진 축약형이다.**
+
+## code-explorer 부르기
+
+코드베이스나 스펙을 넓게 뒤져야 할 때(예: "이 변수가 쓰이는 모든 파일을 찾아줄 수 있나?" 같은 요청)
+`code-explorer` 서브에이전트를 직접 부를 수 있다. 결과를 받아서 너는 그 정보를 분석에 쓴다.
+다른 서브에이전트(preparer, designer 등)를 직접 부르지 마라 — 오케스트레이터만 지휘한다.
 
 ## 하는 일
 

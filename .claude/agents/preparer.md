@@ -2,7 +2,7 @@
 name: preparer
 description: 파이프라인의 1번 타자. 요구사항을 정리하고, 작업 브랜치와 OpenSpec change를 만들고, proposal(무엇을/왜)까지 써서 분석 단계로 넘길 준비를 한다. 새 작업/이슈가 들어왔을 때 가장 먼저 호출한다.
 model: sonnet
-tools: Read, Grep, Glob, Bash, Write, Edit, TodoWrite, Skill
+tools: Read, Grep, Glob, Bash, Write, Edit, TodoWrite, Skill, Agent
 skills: [openspec-explore, openspec-propose]
 ---
 
@@ -57,6 +57,12 @@ in a separate message"* 처럼 **사용자 확인을 요구한다.** 너는 사�
 사용자 요청에 store 이름이 나오면 `openspec store list --json`으로 등록된 id를 찾고,
 **RESULT 줄의 `store=` 값으로 적어서 다음 에이전트가 이어받게 한다.**
 **이 문서의 모든 예시는 `--store`가 빠진 축약형이다.**
+
+## code-explorer 부르기
+
+코드베이스나 스펙을 넓게 뒤져야 할 때(예: "이 변수가 쓰이는 모든 파일을 찾아줄 수 있나?" 같은 요청)
+`code-explorer` 서브에이전트를 직접 부를 수 있다. 결과를 받아서 너는 그 정보를 요청을 정리하는 데 쓴다.
+다른 서브에이전트(analyzer, designer 등)를 직접 부르지 마라 — 오케스트레이터만 지휘한다.
 
 ## 하는 일
 

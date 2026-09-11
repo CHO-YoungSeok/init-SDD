@@ -116,7 +116,7 @@ sed -n '/init-SDD:begin/,/init-SDD:end/p' /tmp/init-SDD/CLAUDE.md >> CLAUDE.md
 ### 설치 확인
 
 ```bash
-ls .claude/agents | wc -l                              # 7
+ls .claude/agents | wc -l                              # 8
 ls .claude/skills                                      # openspec-* 6개 + orchestra + agent-model-tier
 ls .claude/skills/openspec-{explore,propose,update-change,apply-change,sync-specs,archive-change}/SKILL.md
 ls .claude/skills/agent-model-tier/SKILL.md
@@ -201,6 +201,12 @@ context: |
 
 모델은 각 에이전트 파일의 `model:` 한 줄로 바꿀 수 있고, `agent-model-tier` 스킬을 쓰면
 7개를 한 번에 갈 수 있다.
+
+### 보조 에이전트: code-explorer
+
+위 7개 에이전트 외에 `code-explorer`라는 8번째 에이전트가 있다. 이 에이전트는 파이프라인 단계가
+아니라 7개 에이전트 각자가 코드베이스를 넓게 뒤져야 할 때 직접 부르는 읽기 전용 도구다. 
+`agent-model-tier` 스킬의 등급 전환 대상이 아니며, 항상 `haiku`로 고정된다.
 
 ## 만들어지는 파일
 
