@@ -228,7 +228,7 @@ context: |
 
 ## 커스터마이즈
 
-- **모델 바꾸기** — `agent-model-tier` 스킬로 `normal` / `semi-lower` / `lower` 세 등급을
+- **모델 바꾸기** — `agent-model-tier` 스킬로 `1` / `2` / `4` 세 등급을
   한 번에 갈 수 있다. 손으로 에이전트 파일 하나씩 `model:` 줄을 고쳐도 된다.
 - **단계 늘리기** — `.claude/agents/` 에 파일 하나 추가하고 `orchestra` 스킬의 파이프라인에 배선
 - **프로젝트 규칙 주입** — `openspec/config.yaml` 의 `context:` 와 `rules:`.

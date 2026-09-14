@@ -1,12 +1,12 @@
 ---
 name: agent-model-tier
-description: 서브에이전트 7개(preparer, analyzer, designer, worker, reviewer, regression-verifier, finalizer)의 모델 등급을 한 번에 갈아 준다. "모델 낮춰", "토큰 아껴", "semi-lower로", "lower로", "normal로 되돌려", "지금 모델 등급 뭐야" 같은 말에 쓴다.
+description: 서브에이전트 7개(preparer, analyzer, designer, worker, reviewer, regression-verifier, finalizer)의 모델 등급을 한 번에 갈아 준다. "모델 낮춰", "토큰 아껴", "2로", "1로", "4로 되돌려", "지금 모델 등급 뭐야" 같은 말에 쓴다.
 ---
 
 # 에이전트 모델 등급 (agent-model-tier)
 
 서브에이전트 7개가 어느 모델로 도는지를 등급 하나로 한 번에 바꾸는 스킬이다. 토큰을
-아끼려고 등급을 내릴 수 있고, 언제든 원래 등급(`normal`)으로 되돌아올 수 있다.
+아끼려고 등급을 내릴 수 있고, 언제든 원래 등급(`4/5`, 기본값)으로 되돌아올 수 있다.
 
 바꾸는 파일은 `.claude/agents/` 안의 이 7개다:
 
@@ -26,18 +26,20 @@ description: 서브에이전트 7개(preparer, analyzer, designer, worker, revie
 ## 등급 표
 
 세 등급이 있다. 값은 **이 표에 그대로 박혀 있다** — 지금 값을 읽어서 기억하는 방식이
-아니다. 이미 등급을 내려 둔 상태에서 이 스킬을 처음 쓰더라도, `normal` 열의 값이 표 안에
+아니다. 이미 등급을 내려 둔 상태에서 이 스킬을 처음 쓰더라도, `4/5` 열의 값이 표 안에
 있으므로 언제든 원래대로 돌아갈 수 있다.
 
-| 에이전트 | normal (원래 값) | semi-lower | lower |
+| 에이전트 | 1/5 | 2/5 | 4/5 (기본값) |
 |---|---|---|---|
-| preparer | sonnet | haiku | haiku |
-| analyzer | opus | sonnet | haiku |
-| designer | opus | sonnet | haiku |
-| worker | sonnet | haiku | haiku |
-| reviewer | opus | sonnet | haiku |
-| regression-verifier | sonnet | haiku | haiku |
-| finalizer | sonnet | haiku | haiku |
+| preparer | haiku | haiku | sonnet |
+| analyzer | haiku | sonnet | opus |
+| designer | haiku | sonnet | opus |
+| worker | haiku | haiku | sonnet |
+| reviewer | haiku | sonnet | opus |
+| regression-verifier | haiku | haiku | sonnet |
+| finalizer | haiku | haiku | sonnet |
+
+`3`과 `5`는 나중 등급 확장을 위해 비워 둔다 — 지금은 정의되어 있지 않다.
 
 **규칙은 기계적이다 — 한 단계씩 내린다.**
 
@@ -46,9 +48,9 @@ opus   → sonnet
 sonnet → haiku
 ```
 
-`semi-lower`는 특정 역할(예: 리뷰 담당)을 특별 취급하지 않는다. `normal`에서 opus였던
+`2/5`는 특정 역할(예: 리뷰 담당)을 특별 취급하지 않는다. `4/5`에서 opus였던
 셋(analyzer·designer·reviewer)이 sonnet으로, sonnet이었던 넷(preparer·worker·
-regression-verifier·finalizer)이 haiku로 내려간 것뿐이다. `lower`는 한 단계 더 내린
+regression-verifier·finalizer)이 haiku로 내려간 것뿐이다. `1/5`는 한 단계 더 내린
 게 아니라 **7개 전부를 바닥값인 haiku로** 맞춘 것이다.
 
 모델 값은 항상 짧은 이름(`opus` / `sonnet` / `haiku`)만 쓴다. 날짜나 버전이 붙은 전체
@@ -66,13 +68,13 @@ regression-verifier·finalizer)이 haiku로 내려간 것뿐이다. `lower`는 �
    ```bash
    for f in .claude/agents/preparer.md .claude/agents/analyzer.md .claude/agents/designer.md .claude/agents/worker.md .claude/agents/reviewer.md .claude/agents/regression-verifier.md .claude/agents/finalizer.md; do echo "$(basename "$f") $(grep -m1 '^model:' "$f")"; done
    ```
-2. 뽑은 7개 값을 위 등급 표의 `normal` / `semi-lower` / `lower` 세 열과 각각 대조한다.
+2. 뽑은 7개 값을 위 등급 표의 `4/5` / `2/5` / `1/5` 세 열과 각각 대조한다.
 3. **7개 값이 세 표 중 하나와 정확히, 한 칸도 틀리지 않고 같으면** 지금 등급은 그 표의
    이름이다. 그렇게 알린다.
 4. **어느 표와도 정확히 안 맞으면 "섞인 상태"로 보고하고 멈춘다.** 가까운 등급을 짐작해서
    답하지 않는다. 대신:
    - 7개 파일의 실제 `model:` 값을 표로 그대로 보여 준다.
-   - "지금 등급을 적용하면 이 값들이 사라진다"고 알린다. `normal`은 표에서 언제든
+   - "지금 등급을 적용하면 이 값들이 사라진다"고 알린다. `4/5`는 표에서 언제든
      되돌아오지만, **섞인 상태는 이 표 어디에도 기록되어 있지 않아 한 번 덮어쓰면
      복구할 수 없다.**
    - 사용자에게 이 값 목록을 보여 준 채로, 그래도 등급을 바꿀지 다시 물은 뒤에만
@@ -80,8 +82,10 @@ regression-verifier·finalizer)이 haiku로 내려간 것뿐이다. `lower`는 �
 
 ## 등급 적용
 
-사용자가 고른 등급(`normal` / `semi-lower` / `lower`)이 정해지면:
+사용자가 고른 등급(`4` / `2` / `1`)이 정해지면:
 
+0. **입력이 `1`, `2`, `4` 중 하나가 아니면(문자열 이름, `3`, `5` 포함)** 아무 파일도
+   건드리지 않고 지금 쓸 수 있는 값이 `1`, `2`, `4`뿐이라고 알리고 멈춘다.
 1. 위 "지금 등급 확인"을 먼저 한다. 이미 그 등급이면 **아무 파일도 건드리지 않고**
    "이미 `<등급>`입니다"라고 알리고 끝낸다.
 2. 섞인 상태였다면, 사용자가 그래도 진행하라고 확인한 뒤에만 다음 단계로 간다.
@@ -118,7 +122,7 @@ regression-verifier·finalizer)이 haiku로 내려간 것뿐이다. `lower`는 �
 
 ## 낮추면 무엇이 나빠지는가
 
-**`lower`나 `semi-lower`를 적용하기 전에, 아래 경고를 사용자에게 먼저 보여 준다.**
+**`1`이나 `2`를 적용하기 전에, 아래 경고를 사용자에게 먼저 보여 준다.**
 등급을 낮췄을 때 무슨 일이 생기는지 모르고 쓰면, 나중에 문제가 생겨도 원인을 등급에서
 찾지 못한다.
 
@@ -132,8 +136,8 @@ regression-verifier·finalizer)이 haiku로 내려간 것뿐이다. `lower`는 �
    돌리면 같은 위험이 더 자주 일어난다.
 2. **`reviewer`와 `designer`가 약해지면 판정과 설계의 질이 내려간다.** `README.md`가
    "비용이 부담되면 이 셋(analyzer·designer·reviewer)을 sonnet으로 내려라"고 안내하는
-   자리가 바로 여기다. `semi-lower`가 정확히 그 안내와 같은 동작이다.
+   자리가 바로 여기다. `2/5`가 정확히 그 안내와 같은 동작이다.
 3. **낮춘 등급으로 큰 일(새 기능, 여러 모듈에 걸친 변경)을 돌리지 마라.** 등급을
    낮춘 채로는 작은 수정·반복 작업 정도로만 쓰는 게 안전하다.
-4. **되돌리는 방법은 언제나 같다** — 이 스킬로 `normal`을 적용한다. `normal` 표가
+4. **되돌리는 방법은 언제나 같다** — 이 스킬로 `4`를 적용한다. `4/5` 표가
    이 파일 안에 값으로 있으므로 몇 번을 오갔든 정확히 원래 값으로 돌아간다.

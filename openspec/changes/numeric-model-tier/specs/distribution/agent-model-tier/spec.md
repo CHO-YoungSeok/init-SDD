@@ -1,12 +1,4 @@
-# distribution/agent-model-tier Specification
-
-## Purpose
-
-서브에이전트 7개가 어느 모델로 도는지를 등급 하나로 한 번에 바꾸는 절차를 정한다.
-토큰을 아끼려고 등급을 내릴 수 있고 언제든 원래 등급으로 되돌아올 수 있어야 하며,
-등급을 바꾸는 일이 지침 파일을 망가뜨리지 않아야 한다.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: 모델 등급 스킬은 활성 스킬로 놓여야 한다
 
@@ -201,7 +193,7 @@ frontmatter `model:` 값을 읽어 등급 표와 대조하는 방식이어야 �
 #### Scenario: 경고 내용
 
 - **WHEN** `.claude/skills/agent-model-tier/SKILL.md`의 경고 절을 읽는다
-- **THEN** `worker`가 약해지면 멈춘 줄 아는 판단이 약해진다는 서술이 있다
+- **THEN** `worker`가 약해지면 멈출 줄 아는 판단이 약해진다는 서술이 있다
 - **AND** `reviewer`·`designer`가 약해질 때의 영향이 적혀 있다
 - **AND** 기본값(`4/5`)으로 되돌리는 방법이 함께 적혀 있다
 
