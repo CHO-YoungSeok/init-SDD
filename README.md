@@ -82,9 +82,12 @@ cp -r /tmp/init-SDD/.claude/skills/agent-model-tier .claude/skills/
 cp /tmp/init-SDD/.claude/settings.json .claude/      # 권한 프롬프트를 줄인다. 이미 있으면 내용을 확인하고 옮겨라
 ```
 
-> **`.claude/skills/openspec-*` 와 `.claude/commands/opsx/` 는 복사하지 마라.**
-> 이 저장소에 들어 있는 건 1.12.0 스냅샷일 뿐이다. `openspec init`이 네 CLI 버전에 맞는 걸 깔아 준다.
-> `cp -r init-SDD/.claude/* .claude/` 를 하면 오래된 걸로 덮어쓴다.
+> **`.claude/skills/openspec-*` 와 `.claude/commands/opsx/` 는 이 저장소에 git으로
+> 커밋돼 있지 않다.** `openspec init`이 네 CLI 버전에 맞춰 만들어 주는 파일이라 추적하지
+> 않는다(`.gitignore` 참고). 로컬 디스크에는 남아 있을 수 있지만 그건 이 저장소를 마지막에
+> `openspec init`한 사람의 CLI 버전에 맞춰진 것일 뿐이다. 그대로 복사하지 말고, 대상
+> 프로젝트에서 `openspec init --tools claude`를 직접 돌려서 네 CLI 버전에 맞는 걸 새로
+> 만들어라.
 
 ### CLAUDE.md 는 복사하지 말고 **합쳐라**
 
