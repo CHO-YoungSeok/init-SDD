@@ -21,4 +21,5 @@
 
 ## 5. 상위 change 마무리
 
-- [ ] 5.1 받아들일 조건 10개를 proposal.md 표의 담당 하위 change 결과와 대조해 전부 충족(또는 보류 사유 기록)됐는지 확인하고, `openspec validate "plugin-lite-sdd-distribution" --strict` exit=0 확인
+- [x] 5.1 받아들일 조건 10개를 proposal.md 표의 담당 하위 change 결과와 대조해 전부 충족(또는 보류 사유 기록)됐는지 확인하고, `openspec validate "plugin-lite-sdd-distribution" --strict` exit=0 확인
+  - 후속(같은 사용자 지시로 이어 붙임): ⑤ `apply-plugin-to-self`, ⑥ `audit-specs-and-docs` 도 archive 완료(2026-10-09). 지시문 총합 2,698줄(< 2,821), 1.14.1 `validate --all --strict` 실패 0.
