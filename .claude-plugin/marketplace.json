@@ -1,0 +1,8 @@
+{
+  "name": "sdd-marketplace",
+  "description": "SDD 파이프라인 플러그인(sdd)을 배포하는 마켓플레이스",
+  "owner": { "name": "석" },
+  "plugins": [
+    { "name": "sdd", "source": "./", "description": "OpenSpec 위에서 도는 SDD 파이프라인" }
+  ]
+}

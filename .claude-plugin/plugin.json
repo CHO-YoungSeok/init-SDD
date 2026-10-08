@@ -1,0 +1,6 @@
+{
+  "name": "sdd",
+  "version": "0.1.0",
+  "description": "OpenSpec 위에서 도는 SDD(사양 주도 개발) 파이프라인 — 오케스트레이터와 서브에이전트 8개, 지휘·공용 규칙·sync·초기화 스킬",
+  "author": { "name": "석" }
+}
