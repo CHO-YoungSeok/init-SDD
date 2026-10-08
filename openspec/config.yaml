@@ -10,20 +10,27 @@ schema: spec-driven
 #     Domain: e-commerce platform
 
 context: |
-  이 저장소는 실행 코드가 없는 "지시문 저장소"다. SDD 파이프라인의 서브에이전트 지시문
-  (.claude/agents/*.md), 스킬 문서(.claude/skills/**/SKILL.md), 설치 스크립트(install.sh),
-  문서(docs/, README.md)로만 이뤄져 있다. 빌드 산출물도 런타임도 없다.
+  이 저장소는 Claude Code 플러그인 `sdd`의 "지시문 저장소"다. 저장소 루트가 곧 플러그인 루트다.
+  - 서브에이전트 지시문: agents/*.md (파이프라인 7개 + 보조 code-explorer)
+  - 스킬 문서: skills/**/SKILL.md (orchestra, sdd-rules, sdd-sync, init)
+  - 플러그인 선언: .claude-plugin/plugin.json, .claude-plugin/marketplace.json, hooks/hooks.json
+  - 실행 파일(bash 스크립트): bin/sdd-openspec, bin/sdd-init, hooks/session-start.sh, install.sh
+  - 기존 설치 방식(폐기 예고): install.sh, .claude/skills/init-sdd/SKILL.md, .claude/CLAUDE.md 의 표식 구획
+  - 문서: README.md, .claude/CLAUDE.md, docs/, evals/
+  실행 파일은 위 bash 스크립트뿐이다. 빌드 산출물도 서버 런타임도 없다.
 
-  테스트 스위트·빌드·CI가 없다. 검증은 다음 네 가지로만 한다:
-  - bash -n install.sh (문법 검사), bash install.sh --dry-run
-  - OpenSpec CLI 실측 (openspec validate --strict / status / instructions / context).
+  테스트 스위트·빌드·CI가 없다. 검증은 다음으로 한다:
+  - bash -n install.sh bin/sdd-init bin/sdd-openspec hooks/session-start.sh (문법 검사)
+  - bash install.sh --dry-run (mktemp -d 임시 프로젝트에서)
+  - claude plugin validate . --strict, claude plugin validate .claude-plugin/plugin.json --strict
+  - OpenSpec CLI 실측 (./bin/sdd-openspec validate --strict / status / instructions / context).
     출력만 보지 말고 종료코드로 판정한다.
   - grep 대조 (문구가 실제로 들어갔는지, 여러 파일에 같은 문구가 유지되는지)
-  - 마크다운 무결성 눈검사 (frontmatter 온전, 코드펜스 개수 짝수)
+  - 마크다운 무결성 검사 (frontmatter 온전, 코드펜스 줄 수 짝수, 리치 마크다운 토큰 0개)
 
   문서는 전부 한국어로 쓴다. 어려운 용어를 피하고 누구나 이해할 수 있는 쉬운 말을 쓴다.
 
-  .claude/agents/*.md 와 .claude/skills/**/SKILL.md 는 Edit 부분 수정만 한다.
+  agents/*.md 와 skills/**/SKILL.md 는 Edit 부분 수정만 한다.
   전체 Write 재작성과 sed -i 는 금지다 (전체 재작성으로 마크다운이 망가진 사고가 있었다).
 
 # Per-artifact rules (optional)
