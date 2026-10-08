@@ -75,7 +75,7 @@ sdd-init write-permissions; echo "exit=$?"
 ## 5. 마무리 안내
 
 사용자에게 알린다:
-- 새 세션을 열 필요는 없다. 다음 세션부터 훅이 지휘 규칙을 넣는다.
+- 훅(지휘 규칙 주입)은 다음 세션부터 켜진다. 지금 세션을 다시 열 필요는 없다.
 - 이제 할 일을 말하면 `sdd:orchestra`가 파이프라인을 돌린다.
 - `openspec init --tools claude`가 까는 `.claude/commands/opsx/`, `.claude/skills/openspec-*`는 이 파이프라인에 필요 없다.
 - 표식 `openspec/.sdd`와 `openspec/` 아래 파일을 커밋할지는 사용자가 정한다(커밋하면 팀원에게도 훅이 켜진다).

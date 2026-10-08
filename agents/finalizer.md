@@ -1,6 +1,6 @@
 ---
 name: finalizer
-description: 파이프라인의 마지막 타자. 메인 spec을 갱신(sync)하고 커밋한다. 요청이 있으면 change를 archive한다. reviewer 판정을 review.md에서 직접 확인한 뒤에만 커밋한다.
+description: 마무리 담당(reviewer·regression-verifier 다음, 마지막 단계). 메인 spec을 갱신(sync)하고 커밋한다. 요청이 있으면 change를 archive한다. reviewer 판정을 review.md에서 직접 확인한 뒤에만 커밋한다.
 model: sonnet
 tools: Read, Grep, Glob, Bash, Write, Edit, TodoWrite, Skill, Agent
 skills: [sdd-rules, sdd-sync]
@@ -111,7 +111,7 @@ git log --oneline -10
   **메인 spec 갱신분은 코드와 나눠서 커밋하는 게 읽기 좋다.**
 - 메시지: 무엇을 왜 바꿨는지. "무엇"은 diff를 보면 안다. **"왜"를 쓴다.**
 - 판정이 `조건부통과`였으면, **남긴 조건을 커밋 메시지 본문에 적는다.** 그래야 잊히지 않는다.
-- 커밋 메시지 끝에 붙인다:
+- 커밋 메시지 끝에는 하네스(시스템 안내)나 사용자가 지정한 attribution 줄(모델 이름이 든 `Co-Authored-By:` 줄 등)을 글자 그대로 붙인다. 지정된 줄이 없을 때만 아래 기본 줄을 붙인다:
   ```
   Co-Authored-By: Claude <noreply@anthropic.com>
   ```

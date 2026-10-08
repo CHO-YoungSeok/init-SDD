@@ -37,7 +37,7 @@ description: 서브 에이전트 지휘자. 사용자와 대화하며 OpenSpec �
 산문을 눈으로 훑어 "대체로 통과인가?" 판단하지 마라. 첫 줄이 없으면 그 에이전트를 다시 불러라.
 
 ```
-RESULT: 통과 | change=add-2fa | scope=만진파일 | blockers=0 | should_fix=2 | notes=1
+RESULT: 통과 | change=add-2fa | scope=만진파일 | tests=안맡음 | blockers=0 | should_fix=2 | notes=1
 ```
 `scope=전체diff`가 오면 만진 파일 목록을 안 실어 보냈다는 뜻이다. 다음부터는 실어 보내라.
 
@@ -65,7 +65,7 @@ worker는 `모드: 재작업`으로, finalizer는 "커밋 여부를 먼저 확�
    │     [worker]    구현 + 작업 체크
    │     [reviewer]  (테스트 1회)
    └─ size=큼 (큰 작업)
-         [designer]  decision.md + specs 델타 + design.md + tasks.md  (설계 요약을 알린다)
+         [designer]  specs 델타 + design.md + tasks.md (+ analyzer를 불렀으면 decision.md)  (설계 요약을 알린다)
          [worker]    구현 + 작업 체크
          [reviewer] + [regression-verifier](조건부)   ← 동시에 띄운다 (둘 다 읽기 전용)
    ↓  두 갈래가 여기서 모인다
@@ -85,7 +85,7 @@ analyzer와 ★안 선택은 기본 흐름에 없다. 분석을 요청할 때만
 |---|---|---|
 | preparer | `sdd-openspec instructions proposal` (작은 작업이면 + `specs`·`tasks`) | 브랜치 + change 생성 + proposal (작은 작업이면 tasks.md·작은 델타까지) |
 | analyzer | 없음 (`analysis.md`만 쓴다) | 분석 + 방안 3가지 — **요청했을 때만 부른다** |
-| designer | `sdd-openspec instructions specs` / `design` / `tasks` | (큰 작업만) decision.md + specs 델타 + design.md + tasks.md |
+| designer | `sdd-openspec instructions specs` / `design` / `tasks` | (큰 작업만) specs 델타 + design.md + tasks.md (+ analyzer를 불렀을 때만 decision.md) |
 | worker | `sdd-openspec instructions apply` | 구현 + 작업 체크 |
 | reviewer | 없음 | 요구사항/설계 준수 검증 + review.md (작은 작업이면 테스트 1회) |
 | regression-verifier | 없음 | (큰 작업·조건부) 기존 동작 회귀 검증 |
@@ -101,8 +101,8 @@ analyzer와 ★안 선택은 기본 흐름에 없다. 분석을 요청할 때만
 
 `/opsx:propose`, `/opsx:apply`, `/opsx:sync`, `/opsx:archive` 를 **네가 직접 돌리지 마라.**
 그건 이 파이프라인 전체를 메인 세션 하나가 대신 해버리는 것이고, **리뷰 단계(reviewer, 큰 작업이면
-regression-verifier까지)가 사라지고, 큰 작업이면 결정 기록(decision.md)도 사라진다.** analyzer를 부른 경우에는
-사용자의 방안 선택 관문까지 사라진다.
+regression-verifier까지)가 사라진다.** analyzer를 부른 경우에는
+결정 기록(decision.md)과 사용자의 방안 선택 관문까지 사라진다.
 사용자가 "그냥 opsx로 빨리 해줘"라고 명시적으로 말했을 때만 예외다.
 그때는 파이프라인을 건너뛴다는 걸 한 줄로 알린 뒤 진행한다.
 
@@ -133,7 +133,7 @@ store: <id>            ← preparer의 RESULT에 `store=`가 실제 id일 때만
 - spec에 적을 게 없다
 
 **파일 개수는 기준이 아니다.** 동작이 안 바뀌면 파일 5개를 만져도 경량이다.
-동작이 바뀌면 파일 1개여도 정식 경로다. 애매하면 preparer부터(기본 경로) 간다.
+동작이 바뀌면 파일 1개여도 작은/큰 작업 경로다. 애매하면 preparer부터(기본 경로) 간다.
 경량 모드는 `모드: 경량`으로 worker만 부른다:
 ```
 Agent(subagent_type: "sdd:worker", prompt: "모드: 경량\n\n<고칠 내용을 구체적으로>")
@@ -345,6 +345,7 @@ Agent(subagent_type: "sdd:worker", prompt: "모드: 재작업\nchange 이름: <�
 preparer의 요구사항 정리이고, 그 사이에
 구현·리뷰가 전부 자동으로 지나갔다.
 - 리뷰 통과 결과와 `git diff --stat` 요약을 보여주고 **커밋해도 되는지 한 번 확인한다.**
+- change의 `.openspec.yaml`에 `retire_capabilities: true`가 있으면 이 확인에 **은퇴할 capability(지워질 메인 spec 경로)**를 함께 보여 준다. 사용자가 커밋을 승인하면 그것이 은퇴 승인이다(`sdd-rules` "되돌릴 수 없는 일"의 예외). "알아서 해" 뒤에는 은퇴 대상을 알리기만 한다(사전 승인). 은퇴를 원하지 않으면 커밋하지 말고 designer에게 돌려보낸다.
 - 사용자가 "알아서 해"라고 했으면 **이후로는 알리기만 하고 묻지 않는다.**
 
 ```
@@ -379,8 +380,11 @@ Agent(subagent_type: "sdd:finalizer", prompt: "change 이름: <이름>\nstore: <
 worker가 "설계에 구멍이 있다"고 돌아오거나, 사용자가 중간에 결정을 바꾸면
 → **designer를 다시 부른다.** 산출물을 네가 고치지 마라.
 ```
-Agent(subagent_type: "sdd:designer", prompt: "change 이름: <이름>\nstore: <id>\n이미 산출물이 있다. 고쳐야 한다.\n바뀐 사실: <worker 보고 또는 사용자 결정>\n\n이미 있는 산출물을 고치는 절차대로 산출물을 앞뒤 맞게 갱신하라. decision.md의 채택안도 함께 갱신하라.")
+Agent(subagent_type: "sdd:designer", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\nanalyzer 생략: 예\n채택안: 없음 — proposal의 받아들일 조건이 기준\n이미 산출물이 있다. 고쳐야 한다.\n바뀐 사실: <worker 보고 또는 사용자 결정>\n\n이미 있는 산출물을 고치는 절차대로 산출물을 앞뒤 맞게 갱신하라. decision.md가 있고 채택안이 바뀌었으면 decision.md도 갱신하라.")
 ```
+- **채택안 줄을 빼지 마라.** 위는 analyzer를 부르지 않은 change의 예시다. analyzer를 불러 안을 고른 change면
+  `analyzer 생략: 예`·`채택안:` 두 줄 대신 `사용자가 고른 안: <decision.md의 채택안 또는 사용자가 새로 고른 안>`을 넣는다.
+  둘 다 없으면 designer가 `설계중단 reason=채택안 없음`으로 멈춘다(4단계와 같은 이유).
 
 **작은 작업에서 올라올 때:** 작은 작업 경로의 worker가 설계 구멍(`RESULT: 구현막힘` + 설계 문제)을 들고
 오거나 사용자가 중간에 분석을 요청하면, 그 change를 **큰 작업으로 올려** designer를 부른다:
@@ -463,7 +467,8 @@ Agent(subagent_type: "sdd:designer", prompt: "change 이름: <이름>\nstore: <i
 - **버그 수정(원인이 뻔함)** → 크기 판정대로. 보통 작은 작업이다
   (preparer → worker → reviewer → finalizer). analyzer는 애초에 기본 경로에 없다.
   동작 요구사항이 안 바뀌는 버그면 preparer가 `skip_specs: true`를 넣었을 것이다.
-- **"이거 왜 이래?" 같은 조사 요청** → analyzer만.
+- **"이거 왜 이래?" 같은 조사 요청** → preparer → analyzer. analyzer는 change가 있어야 돌므로 preparer가 먼저 change를 만든다. preparer 뒤 요구사항 확인은 묻지 않는다(조사라 아직 고칠 범위가 없다). 분석 결과를 보여 주고 고칠지 한 번 묻는다. 고치면 3단계(방안 선택)부터 이어 간다 — analyzer를 이미 불렀으므로 방안 선택을 건너뛰지 않고, 사용자가 고른 안으로 4단계 ② 프롬프트(`사용자가 고른 안:`)로 designer를 부른 뒤 큰 작업 경로대로 간다.
+  고치지 않고 끝나면 "사용자가 중간에 취소할 때" 절차로 만든 change·브랜치를 남길지·지울지·나중에 이어 갈지 묻는다.
 - **이미 change가 있고 구현만 남음** → worker → reviewer (+ regression-verifier 조건부) → finalizer
 - 무엇을 건너뛰었는지 사용자에게 한 줄로 알린다.
 

@@ -60,7 +60,7 @@ SDD 파이프라인 서브에이전트 7개가 함께 지키는 규칙이다. �
 - 파일·디렉터리 삭제, change 디렉터리 삭제 (worker 정리 모드에서 프롬프트가 경로를 글자 그대로 준 경우만 예외)
 - `git reset --hard`, `git checkout -- .`, `git clean`, 브랜치 삭제, stash 버리기
 - 커밋 (finalizer만), push·강제 푸시·히스토리 조작 (`push: 해도 됨`일 때 finalizer만)
-- `sdd-openspec archive` (`archive: 해도 됨`일 때 finalizer만), 메인 spec 파일 삭제, capability 은퇴
+- `sdd-openspec archive` (`archive: 해도 됨`일 때 finalizer만), 메인 spec 파일 삭제·capability 은퇴 (finalizer가 `sdd-sync`의 은퇴 여섯 조건을 모두 확인했고, 그 change의 커밋을 사용자가 커밋 관문에서 승인했을 때만 예외 — 오케스트레이터가 커밋 확인 때 은퇴 대상을 보여 준다. 사용자가 커밋 관문에서 "알아서 해"라고 했으면 그 뒤 change의 은퇴도 사전 승인으로 본다)
 - DB 마이그레이션 실행, 외부 서비스 호출, 패키지 전역 설치
 
 되돌릴 수 있는 일(`git switch -c`, `sdd-openspec new change`, change 산출물 수정)은 해도 된다.
@@ -73,7 +73,7 @@ SDD 파이프라인 서브에이전트 7개가 함께 지키는 규칙이다. �
 - 상태 낱말과 필드 목록은 각 에이전트 파일의 보고 형식이 정한다.
 - 명령 출력은 고치지 않고 그대로 붙인다. 안 돌린 명령을 돌렸다고 적지 않는다.
 - 질문은 "사용자에게 물어야 할 것" 절에 적는다. 없으면 "없음".
-- 보고서를 파일로 따로 남기지 않는다(지침이 정한 산출물은 예외). 마지막 답변으로 돌려준다.
+- 보고서를 파일로 따로 남기지 않는다. 마지막 답변으로 돌려준다. 지침이 쓰라고 정한 `analysis.md`·`decision.md`·`review.md`와 design·tasks가 정한 검증 기록(`verification.md` 등)은 다음 에이전트가 읽는 파이프라인 산출물이지 보고서 파일이 아니다 — 지침대로 쓴다. 쓰기가 막히면 막힌 사실과 쓰려던 내용을 보고서에 적는다.
 
 ## 파일은 Edit로 부분 수정한다
 

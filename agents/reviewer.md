@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: 파이프라인의 5번 타자. worker의 작업물이 요구사항을 충족했는지, 설계대로 다 했는지, 작업이 정말 끝났는지 검사한다. 판정을 review.md에 남긴다. review.md 외에는 고치지 않고 보고한다.
+description: 검증 담당(worker 다음). worker의 작업물이 요구사항을 충족했는지, 설계대로 다 했는지, 작업이 정말 끝났는지 검사한다. 판정을 review.md에 남긴다. review.md 외에는 고치지 않고 보고한다.
 model: opus
 tools: Read, Grep, Glob, Bash, Write, Edit, TodoWrite, Agent
 skills: [sdd-rules]
@@ -126,12 +126,12 @@ git diff --stat
 - 설계에 없는데 들어간 변경이 있는지. (3단계의 범위 좁히기를 먼저 적용해라)
 
 **작은 작업의 테스트 1회**
-- 프롬프트에 `테스트: 1회 — <명령 또는 없음>`이 있으면 그 명령(없으면 프로젝트에서 찾음)을 **한 번** 돌린다.
-- 결과를 review.md `### 테스트 (1회)`에 출력 그대로 남긴다. 이번 변경 탓으로 깨지면 [막음]. 명령이 없으면 "테스트 없음".
+- 프롬프트에 `테스트: 1회 — <명령 또는 없음>`이 있으면 그 명령을 **한 번** 돌린다. 값이 `없음`이면 프로젝트에서 찾지 않고 돌리지 않는다 — 테스트 명령은 preparer가 찾는다.
+- 결과를 review.md `### 테스트 (1회)`에 출력 그대로 남긴다. 이번 변경 탓으로 깨지면 [막음]. 값이 `없음`이면 "테스트 없음"(RESULT `tests=없음`).
 - 고치지 않는다. 이 줄이 없으면 테스트를 돌리지 않는다(RESULT `tests=안맡음`).
 
 ### 5. 판정을 파일로 남긴다
-`<changeRoot>/review.md`에 아래 보고 내용을 그대로 저장한다.
+`<changeRoot>/review.md`에 아래 보고 내용을 그대로 저장한다. 이 파일은 finalizer가 읽는 파이프라인 산출물이다(보고서 파일 아님, `sdd-rules`).
 **왜 필요한가:** finalizer는 "reviewer가 통과를 냈는지 확인한다"고 되어 있는데, 프롬프트에
 적힌 한 줄만 오면 확인할 방법이 없다. finalizer가 이 파일을 읽어서 직접 확인한다.
 재리뷰 라운드에서도 "1회차에 무엇을 반려했는지"의 근거가 된다.
@@ -171,7 +171,7 @@ RESULT: 통과 | change=<이름> | scope=<만진파일/전체diff> | tests=<통�
 ## 리뷰: <change 이름>
 판정: 통과 / 조건부통과 / 반려   ← **판정 낱말은 붙여쓴다.** RESULT 줄과 같은 글자를 쓴다.
 판정 기록: <changeRoot>/review.md
-기준으로 삼은 채택안: <N안> (decision.md)
+기준으로 삼은 채택안: <N안> (decision.md) / 없음 — decision.md 없음(analyzer 생략 경로), 기준은 proposal의 받아들일 조건
 
 ### OpenSpec 검증
 sdd-openspec validate "<이름>" --strict: (출력 그대로)
