@@ -22,7 +22,7 @@ evals/
     └── graders/criteria.md
 ```
 
-- `lite-path-small-task`: 경량 경로로 처리할 작은 작업. `--ablation with-without` 의 without 쪽이 곧 직접 작업이다.
+- `lite-path-small-task`: 작은 작업 경로(`preparer → worker → reviewer → finalizer`)로 처리할 작은 작업. `--ablation with-without` 의 without 쪽이 곧 직접 작업이다.
 - `direct-work-control`: SDD 와 상관없는 평범한 직접 요청. 플러그인이 직접 작업을 해치지 않는지 보는 대조군이다.
 - `prompt.md` 머리글에는 `max_turns`, `allowed_tools` 가, `graders/criteria.md` 머리글에는 `type: llm`, `weight` 가 있다.
 

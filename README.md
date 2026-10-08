@@ -42,7 +42,7 @@ Claude Code에게 큰 일을 그냥 맡기면, 분석과 설계와 구현이 한
 
 이 구조는 그 지점을 만든다. 작은 작업에는 사람이 개입할 지점이 셋 있다 — **범위 밖 확인**
 (요구사항 정리 직후, "그것도 해줘" 할 기회), **조건부 통과 확인**(리뷰에서 지적이 남았을 때),
-**커밋 직전 확인**(diff 요약을 보고 확인). 큰 작업에는 여기에 **결정 기록**과 **설계 요약
+**커밋 직전 확인**(diff 요약을 보고 확인). 큰 작업에는 여기에 **설계 요약
 알림**(설계가 끝났을 때)이 더해진다.
 사용자가 원하면 여기에 **방안 3가지를 들고 와서 사람에게 고르게 하는** 방안 선택 관문을
 언제든 열 수 있다 — analyzer를 부르면 뜬다. 그 선택은 파일로 기록되고(`decision.md`),
@@ -64,7 +64,7 @@ Claude Code에게 큰 일을 그냥 맡기면, 분석과 설계와 구현이 한
 중간에 취소할 때, 그리고 analyzer를 부르면 방안 선택도 물어야 한다).
 
 1. 요구사항 정리 후 — **범위 밖** 확인 ("그것도 해줘" 할 기회. 여기서 "방안을 비교해 보고
-   고르시겠어요? 아니면 바로 설계로 갈까요?"도 함께 물어본다)
+   고르시겠어요? 아니면 바로 진행할까요?"도 함께 물어본다)
 2. 조건부 통과가 나왔을 때 — 남은 지적을 지금 고칠지 정한다
 3. 커밋 직전 — diff 요약을 보고 확인한다
 
@@ -81,7 +81,7 @@ Claude Code에게 큰 일을 그냥 맡기면, 분석과 설계와 구현이 한
 | 오타·주석·이름 변경 (**동작 안 바뀜**) | worker → finalizer | 2번 | 0 |
 | 작은 작업 (기본) | `preparer → worker → reviewer → finalizer` | 4번 | 3 |
 | 큰 작업 | `preparer → designer → worker → reviewer (+ regression-verifier) → finalizer` | 5~6번 | 3 |
-| "이거 왜 이래?" 조사 | analyzer 1번 | 1번 | 0 |
+| "이거 왜 이래?" 조사 | `preparer → analyzer` (analyzer는 change가 있어야 돈다) | 2번 | 1~2 (고칠지 1번, 고치지 않고 끝나면 change 정리 1번. 고치면 3단계 방안 선택부터 큰 작업 관문이 이어진다) |
 
 작은 작업과 큰 작업을 가르는 판정 기준은 `orchestra` 스킬에 있다 (이 문서에 옮겨 적지 않는다).
 방안 비교가 필요해지면 그 자리에서 `"방안 뽑아줘"`라고 말해 analyzer를 끼워 넣으면
@@ -93,7 +93,7 @@ Claude Code에게 큰 일을 그냥 맡기면, 분석과 설계와 구현이 한
 |---|---|---|
 | `preparer` | 요구사항 정리, 작업 브랜치 + OpenSpec change 생성, proposal 작성 (작은 작업이면 작업 목록까지) | sonnet |
 | `analyzer` | 코드베이스 분석, **방안 최소 3가지 + 의견과 근거** (부를 때만 돈다) | opus |
-| `designer` | 큰 작업일 때만 — 결정 기록(decision.md), specs 델타, design.md, tasks.md | opus |
+| `designer` | 큰 작업일 때만 — specs 델타, design.md, tasks.md (analyzer를 불렀으면 결정 기록 decision.md도) | opus |
 | `worker` | 구현, 파일 수정, 테스트 (코드를 만지는 유일한 에이전트) | sonnet |
 | `reviewer` | 요구사항 충족·설계 준수·작업 완료 검증 (읽기 전용) | opus |
 | `regression-verifier` | 기존 동작이 깨졌는지 (읽기 전용, reviewer와 병렬). 큰 작업이고, 실행 코드가 바뀌었고, 테스트 명령이 있을 때만(`orchestra` 기준) | sonnet |
@@ -115,7 +115,7 @@ Claude Code에게 큰 일을 그냥 맡기면, 분석과 설계와 구현이 한
 |---|---|---|
 | `proposal.md` | preparer | 무엇을 / 왜 + 받아들일 조건 |
 | `analysis.md` | analyzer | 분석 결과와 방안 3가지 (스키마 밖 파일) |
-| `decision.md` | designer | **사용자가 고른 안** (리뷰의 기준) |
+| `decision.md` | designer | **사용자가 고른 안** (리뷰의 기준, analyzer를 불렀을 때만) |
 | `specs/<capability>/spec.md` | designer (작은 작업이면 preparer) | 요구사항 변화분(델타) |
 | `design.md` | designer | 어떻게 (조건부) |
 | `tasks.md` | designer (작은 작업이면 preparer) | 작업 목록 |
@@ -170,13 +170,15 @@ Claude Code 안에서 두 줄:
 ### 훅 켜기·끄기
 
 `/sdd:init`이 만드는 표식 파일 `openspec/.sdd`가 있는 프로젝트에서만 SessionStart 훅이
-지휘 규칙과 점검 결과를 넣는다. 표식을 커밋하면 같은 저장소에서 플러그인을 깐 팀원에게도 켜진다.
+지휘 규칙과 점검 결과를 넣는다. 켜는 것도 끄는 것도 다음 세션부터 적용된다.
+표식을 커밋하면 같은 저장소에서 플러그인을 깐 팀원에게도 켜진다.
 그 프로젝트에서 끄려면 표식을 지운다. 모든 프로젝트에서 끄려면 `/plugin disable sdd`.
-다음 세션부터 훅이 지휘 규칙을 넣는다.
 
 ### 권한
 
 `/sdd:init`은 권한 목록을 보여 주고 동의를 받은 뒤 `.claude/settings.local.json`에만 빠진 줄을 더한다. 공유 `.claude/settings.json`은 고치지 않는다.
+
+훅 점검은 프로젝트의 두 파일(`.claude/settings.json`, `.claude/settings.local.json`)만 본다. 권한을 전역 `~/.claude/settings.json`에 두었다면 "권한에 Bash(sdd-openspec:*)가 없다" 경고는 무시해도 된다.
 
 ### 업데이트
 
@@ -290,7 +292,7 @@ sed -n '/init-SDD:begin/,/init-SDD:end/p' "$SDD_SRC"/.claude/CLAUDE.md >> CLAUDE
 프로젝트에 같은 이름이 있는지 확인하고, 있으면 덮어쓰지 말고 내용을 확인해라.
 
 - `CLAUDE.md` → 위 안내대로 **합친다**
-- `.claude/agents/{preparer,analyzer,designer,worker,reviewer,regression-verifier,finalizer}.md`
+- `.claude/agents/{preparer,analyzer,designer,worker,reviewer,regression-verifier,finalizer,code-explorer}.md`
 - `.claude/skills/orchestra/`
 - `.claude/skills/sdd-rules/`
 - `.claude/skills/sdd-sync/`
@@ -328,9 +330,10 @@ openspec list                                          # 에러 없이 돌아야
 
 ```yaml
 context: |
-  Tech stack: <언어/프레임워크>
-  테스트: <실제 명령>
-  빌드: <실제 명령>
+  기술 스택: <언어/프레임워크>
+  테스트 명령: <실제 명령>
+  빌드 명령: <실제 명령>
+  기본 브랜치: <이름>
   관례: <있으면>
 ```
 
@@ -357,18 +360,19 @@ context: |
   그래서 범위 밖 확인·방안 선택 같은 관문이 메인 세션에 있다.
 - **에이전트는 openspec 스킬을 부르지도 읽지도 않는다.** `openspec instructions` 출력과 공용 규칙
   `sdd-rules`, spec 병합 절차 `sdd-sync`를 따른다.
-- **되돌릴 수 없는 일은 에이전트가 하지 않는다.** `git push`, `openspec archive`,
-  메인 spec 파일 삭제는 사용자가 명시적으로 요청해야 한다.
+- **되돌릴 수 없는 일은 에이전트가 하지 않는다.** `git push`, `openspec archive`는
+  사용자가 명시적으로 요청해야 한다. 메인 spec 파일 삭제(capability 은퇴)는 커밋 확인 때 은퇴 대상을 보여 주고,
+  사용자가 커밋을 승인한 change에서만 finalizer가 한다.
 - **작은 작업 한 번은 서브에이전트 4번 호출이고, 큰 작업은 5~6번이다** (designer·reviewer가 opus).
   analyzer를 부르면 한 번 늘어난다(그때는 analyzer도 opus). 느리고 토큰을 많이 쓴다. 오타 수정에는 자동으로
-  경량 경로가 쓰인다. 비용이 부담되면 해당 에이전트 파일들의 `model:` 을 손으로 내려라.
+  경량 모드(worker → finalizer)가 쓰인다. 비용이 부담되면 해당 에이전트 파일들의 `model:` 을 손으로 내려라.
 - **대화형 세션에서만 제대로 돈다.** 범위 밖 확인, 커밋 직전 확인 같은 필수 질문이 대화형
   질문이라 `claude -p` 같은 비대화형 실행에서는 그 관문들이 뜨지 않는다.
 - **기존 코드가 있는 프로젝트는 처음에 spec이 0개다. 그게 맞다.** change를 하나씩 돌리면서
   건드리는 부분만 spec으로 쌓인다. 코드베이스 전체를 미리 문서화하지 않아도 된다.
 - `openspec init --tools claude`로 초기화하면 `/opsx:propose` 같은 명령 6개도 깔린다(`/sdd:init`은 깔지 않는다).
-  **그걸 직접 쓰면 결정 기록(decision.md)과 리뷰 단계가 사라진다.** analyzer를 부른 경우라면
-  방안 선택 관문까지 함께 건너뛰게 된다. 평소엔 그냥 말로 시켜라.
+  **그걸 직접 쓰면 리뷰 단계가 사라진다.** analyzer를 부른 경우라면
+  결정 기록(decision.md)과 방안 선택 관문까지 함께 건너뛰게 된다. 평소엔 그냥 말로 시켜라.
 - 에이전트 파일과 이 문서는 **한국어**다. 파이프라인도 한국어로 말한다.
   다른 언어로 쓰려면 포크에서 `agents/*.md`와 `skills/{orchestra,sdd-rules,sdd-sync,init}/SKILL.md`를 번역하고,
   산출물 언어는 `openspec init --language <언어>` 로 정한다.

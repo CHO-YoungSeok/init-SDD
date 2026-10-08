@@ -1,6 +1,6 @@
 # 실전 검증 기록 양식
 
-이 문서는 같은 작업을 직접 작업, SDD 경량 경로, SDD 정식 경로로 했을 때의 결과를 같은 항목으로 적고 비교하는 양식이다.
+이 문서는 같은 작업을 직접 작업, SDD 작은 작업 경로, SDD 큰 작업 경로로 했을 때의 결과를 같은 항목으로 적고 비교하는 양식이다.
 파이프라인의 단계를 남길지 뺄지를 느낌이 아니라 기록으로 정하려고 쓴다.
 아직 측정은 하지 않았다. 아래 기록 표의 값 칸은 비어 있고, 기준선 값만 채워져 있다.
 
@@ -9,8 +9,10 @@
 | 대상 | 뜻 | 지금 측정 가능 여부 |
 |---|---|---|
 | 직접 작업 | SDD 파이프라인 없이 메인 세션에 바로 요청해 끝낸 작업 | 가능 |
-| 경량 경로 | orchestra + worker + reviewer + 커밋 관문 | ② 이후 |
-| 정식 경로 | preparer → designer → worker → reviewer + regression-verifier → finalizer (analyzer는 요청할 때만) | 가능 |
+| 작은 작업 경로 | `preparer → worker → reviewer → 커밋 관문 → finalizer` (orchestra 기본 경로) | 가능 |
+| 큰 작업 경로 | `preparer → designer → worker → reviewer (+ regression-verifier, 조건부) → 커밋 관문 → finalizer` (analyzer는 요청할 때만) | 가능 |
+
+orchestra의 경량 모드(worker → finalizer, 동작이 안 바뀌는 수정)는 비교 대상이 아니다.
 
 ## 측정 항목과 수단
 
@@ -18,12 +20,12 @@
 |---|---|---|---|---|
 | 품질 | 충족 수 `n/m`, 재작업 횟수 | 받아들일 조건 체크리스트 대조, reviewer 판정, eval 점수 | 판정 기준 a·b·c (아래) | 조건에 적지 않은 품질(읽기 좋음 등) |
 | 소요 시간 | 분 | 요청 시작부터 커밋까지 벽시계 시각, `/cost` 의 duration 표시 | 전체 걸린 시간 | 사람이 기다리거나 판단한 시간과 기계 시간의 구분 |
-| 토큰 | k 토큰 | `/cost`(세션 사용량), `claude plugin details <name>`(지시문 정적 토큰 추정, ③ 이후), 세션 로그(`~/.claude/projects/` 아래 jsonl) | 세션이 쓴 양, 지시문이 차지하는 양 | `/cost` 가 서브에이전트 사용량을 포함하는지는 측정 때 확인해 비고에 적는다. `plugin details` 는 실제 사용량이 아니라 추정이다 |
+| 토큰 | k 토큰 | `/cost`(세션 사용량), `claude plugin details <name>`(지시문 정적 토큰 추정), 세션 로그(`~/.claude/projects/` 아래 jsonl) | 세션이 쓴 양, 지시문이 차지하는 양 | `/cost` 가 서브에이전트 사용량을 포함하는지는 측정 때 확인해 비고에 적는다. `plugin details` 는 실제 사용량이 아니라 추정이다 |
 
 품질 판정 기준:
 - (a) proposal(직접 작업이면 작업 전에 적어 둔) 받아들일 조건을 몇 개 채웠는가 `n/m`
 - (b) 커밋 뒤 사람이 고친 재작업 횟수
-- (c) `claude plugin eval` grader 점수 (③ 이후)
+- (c) `claude plugin eval` grader 점수
 
 ## 기준선 (② 경량화 전)
 
@@ -48,7 +50,7 @@ archive 뒤에는 `openspec/changes/archive/*-plugin-lite-sdd-distribution/analy
 
 ## 기록 표
 
-작업 1건이 1행이다. 약어: D = 직접 작업, L = 경량 경로, F = 정식 경로.
+작업 1건이 1행이다. 약어: D = 직접 작업, L = 작은 작업 경로, F = 큰 작업 경로.
 품질 칸은 `n/m, 재작업 r` 형식으로 적는다 (예: 조건 4개 중 3개 충족, 재작업 1번이면 `3/4, 재작업 1`).
 
 | # | 날짜 | 작업 요약 | 받아들일 조건 수 | D 품질 | D 시간(분) | D 토큰(k) | L 품질 | L 시간(분) | L 토큰(k) | F 품질 | F 시간(분) | F 토큰(k) | 비고 |
@@ -69,7 +71,7 @@ archive 뒤에는 `openspec/changes/archive/*-plugin-lite-sdd-distribution/analy
 
 | # | 조건 (측정 결과) | 조치 |
 |---|---|---|
-| 1 | L 품질이 F 품질과 동등하고 L 의 시간·토큰이 F 보다 적다 | 경량 경로를 기본으로 유지한다. designer 는 큰 작업 조건에서만 켠다 |
+| 1 | L 품질이 F 품질과 동등하고 L 의 시간·토큰이 F 보다 적다 | 작은 작업 경로를 기본으로 유지한다. designer 는 큰 작업 조건에서만 켠다 |
 | 2 | L 품질이 F 보다 낮고, 단계 기여 메모에서 그 차이가 설계 구멍(worker 되돌아옴)으로 설명된다 | designer 를 유지한다. 큰 작업 판정 조건을 넓힐지 사용자가 정한다 |
 | 3 | N건 동안 regression-verifier 가 잡은 회귀가 0건이다 | regression-verifier 를 "실행 코드 + 테스트 명령이 있을 때만" 으로 두거나 제거를 검토한다 |
 | 4 | regression-verifier 가 reviewer 가 놓친 회귀를 1건 이상 잡았다 | regression-verifier 를 유지한다 |
@@ -82,7 +84,7 @@ archive 뒤에는 `openspec/changes/archive/*-plugin-lite-sdd-distribution/analy
 
 ## claude plugin eval 로 보조 측정
 
-플러그인 전환(③) 뒤에는 `claude plugin eval` 로 품질 점수를 보조로 얻을 수 있다.
+`claude plugin eval` 로 품질 점수를 보조로 얻을 수 있다(저장소 루트에서 실행).
 사례 폴더와 실행 방법은 `evals/README.md` 를 본다.
 
 ## 한계

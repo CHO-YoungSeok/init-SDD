@@ -1,6 +1,6 @@
 ---
 name: init-sdd
-description: 개인 agentic 설정(서브에이전트 7개, orchestra·sdd-rules·sdd-sync 스킬, 권한 설정)을 별도의 개인 git 저장소에 두고, 공유 프로젝트의 `.claude/` 안에서는 그것을 심볼릭 링크로 가리키게 해 준다. "개인 설정을 별도 저장소로 분리해줘", "링크 방식으로 SDD 깔아줘", "링크로 연결해줘", "연결 풀어줘", "원래대로 되돌려줘", "지금 연결돼 있어?", "링크 상태 봐줘" 같은 말에 쓴다.
+description: 개인 agentic 설정(서브에이전트 8개, orchestra·sdd-rules·sdd-sync 스킬, 권한 설정)을 별도의 개인 git 저장소에 두고, 공유 프로젝트의 `.claude/` 안에서는 그것을 심볼릭 링크로 가리키게 해 준다. "개인 설정을 별도 저장소로 분리해줘", "링크 방식으로 SDD 깔아줘", "링크로 연결해줘", "연결 풀어줘", "원래대로 되돌려줘", "지금 연결돼 있어?", "링크 상태 봐줘" 같은 말에 쓴다.
 ---
 
 # 링크 방식으로 SDD 얹기 (init-sdd)
@@ -511,8 +511,8 @@ git -C "$대상" status --porcelain
 서브에이전트는 새 Claude Code 세션을 띄울 수 없다. 그래서 **마지막 확인은 사용자가 한다.**
 
 1. 대상 프로젝트에서 Claude Code를 **새 세션으로** 다시 연다 (설정을 읽는 시점이 세션 시작이다).
-2. 서브에이전트가 잡히는지 본다: 에이전트 목록에 7개(`preparer`, `analyzer`, `designer`,
-   `worker`, `reviewer`, `regression-verifier`, `finalizer`)가 보이는지.
+2. 서브에이전트가 잡히는지 본다: 에이전트 목록에 8개(`preparer`, `analyzer`, `designer`,
+   `worker`, `reviewer`, `regression-verifier`, `finalizer`, `code-explorer`)가 보이는지.
 3. 스킬이 잡히는지 본다: 스킬 목록에 `orchestra`, `sdd-rules`, `sdd-sync`가 보이는지.
 4. 실제로 한 번 불러 본다: `/orchestra` 를 쳐 보고 응답이 오는지.
 
