@@ -13,7 +13,7 @@
 
 ## 3. ② lite-default-path-and-shared-rules
 
-- [ ] 3.1 하위 change `lite-default-path-and-shared-rules` 완료: 스캐폴드 SKILL.md 없이 파이프라인이 돌고(조건 3), 기본 경로로 작은 작업을 끝까지 돌릴 수 있고 tasks.md는 preparer가 쓰며(조건 4), 큰 작업 조건 규칙이 orchestra 한 곳에 있고(조건 5), 반복 규칙이 sdd-rules 한 곳에만 있으며 `wc -l` 지시문 총합이 2,821줄보다 적고(조건 6), validate --strict exit=0, 해당 change archive 완료 (archive 폴더 존재로 확인)
+- [x] 3.1 하위 change `lite-default-path-and-shared-rules` 완료: 스캐폴드 SKILL.md 없이 파이프라인이 돌고(조건 3), 기본 경로로 작은 작업을 끝까지 돌릴 수 있고 tasks.md는 preparer가 쓰며(조건 4), 큰 작업 조건 규칙이 orchestra 한 곳에 있고(조건 5), 반복 규칙이 sdd-rules 한 곳에만 있으며 `wc -l` 지시문 총합이 2,821줄보다 적고(조건 6), validate --strict exit=0, 해당 change archive 완료 (archive 폴더 존재로 확인)
 
 ## 4. ③ convert-to-plugin
 
