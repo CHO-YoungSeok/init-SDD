@@ -9,7 +9,7 @@
 
 ## 2. ④ add-field-validation-record
 
-- [ ] 2.1 하위 change `add-field-validation-record` 완료: `docs/field-validation.md` 양식으로 품질 / 소요 시간 / 토큰을 직접 작업·SDD 작업 같은 항목으로 기록할 수 있고(조건 9), `evals/` 사례 폴더 뼈대가 있으며, validate --strict exit=0, 해당 change archive 완료 (archive 폴더 존재로 확인)
+- [x] 2.1 하위 change `add-field-validation-record` 완료: `docs/field-validation.md` 양식으로 품질 / 소요 시간 / 토큰을 직접 작업·SDD 작업 같은 항목으로 기록할 수 있고(조건 9), `evals/` 사례 폴더 뼈대가 있으며, validate --strict exit=0, 해당 change archive 완료 (archive 폴더 존재로 확인)
 
 ## 3. ② lite-default-path-and-shared-rules
 
