@@ -10,10 +10,10 @@
 
 ### Requirement: 스킬 호출 근거 문단은 sdd-rules 한 곳에서 allowed-tools 제약을 근거로 들어야 한다
 
-"openspec 스킬을 왜 부르지 않는가"를 설명하는 문단은 `.claude/skills/sdd-rules/SKILL.md`의
-쓰는 스킬 절 **한 곳에만** 있어야 한다(SHALL). `.claude/agents/preparer.md`,
-`.claude/agents/designer.md`, `.claude/agents/worker.md`, `.claude/agents/finalizer.md`,
-`.claude/agents/analyzer.md`에는 그 문단의 사본이 있어서는 안 된다(MUST NOT). 에이전트는
+"openspec 스킬을 왜 부르지 않는가"를 설명하는 문단은 `skills/sdd-rules/SKILL.md`의
+쓰는 스킬 절 **한 곳에만** 있어야 한다(SHALL). `agents/preparer.md`,
+`agents/designer.md`, `agents/worker.md`, `agents/finalizer.md`,
+`agents/analyzer.md`에는 그 문단의 사본이 있어서는 안 된다(MUST NOT). 에이전트는
 frontmatter `skills:`로 sdd-rules를 주입받는다.
 
 그 문단은 다음 세 가지를 담아야 한다(SHALL):

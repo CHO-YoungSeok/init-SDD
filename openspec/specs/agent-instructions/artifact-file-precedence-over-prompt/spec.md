@@ -9,7 +9,7 @@ designer가 프롬프트에 손으로 옮겨 적힌 요약보다 원본 산출�
 
 ### Requirement: designer는 프롬프트 요약보다 원본 파일을 우선해야 한다
 
-`.claude/agents/designer.md`의 1단계(입력 다시 읽기)는 다음 세 가지를 명시해야 한다(SHALL):
+`agents/designer.md`의 1단계(입력 다시 읽기)는 다음 세 가지를 명시해야 한다(SHALL):
 프롬프트에 실려 온 숫자·표·인용과 `analysis.md`의 내용이 다르면 **파일이 맞다는 것**,
 기준선 숫자처럼 설계가 기대는 값은 반드시 `analysis.md`에서 다시 읽어야 한다는 것,
 다르면 그 사실을 보고서에 적어야 한다는 것.

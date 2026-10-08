@@ -22,7 +22,7 @@ finalizer(모드: 경량 커밋)`으로 간다. 이 경로는 바뀌지 않는�
 
 #### Scenario: orchestra 파이프라인 그림
 
-- **WHEN** `.claude/skills/orchestra/SKILL.md`의 파이프라인 그림을 읽는다
+- **WHEN** `skills/orchestra/SKILL.md`의 파이프라인 그림을 읽는다
 - **THEN** preparer 다음에 크기(`size=`)로 갈라지는 분기가 있다
 - **AND** 작은 작업 갈래는 `[worker]`로 바로 가고, 큰 작업 갈래에만 `[designer]`가 있다
 
@@ -42,7 +42,7 @@ finalizer(모드: 경량 커밋)`으로 간다. 이 경로는 바뀌지 않는�
 
 ### Requirement: 큰 작업 판정 기준은 orchestra 한 곳에만 있어야 한다
 
-"큰 작업" 판정 기준은 `.claude/skills/orchestra/SKILL.md`의 한 절에만 적혀야 한다(SHALL).
+"큰 작업" 판정 기준은 `skills/orchestra/SKILL.md`의 한 절에만 적혀야 한다(SHALL).
 그 절은 `openspec instructions design`이 design.md를 만들 조건으로 드는 네 가지
 (여러 모듈에 걸치거나 새 구조 패턴, 새 외부 의존이나 데이터 모델의 큰 변경, 보안·성능·
 마이그레이션 복잡도, 코딩 전에 기술 결정이 필요한 모호함)와 "사용자가 분석·방안 비교를
@@ -56,20 +56,20 @@ orchestra의 그 절이라는 것을 가리킨다(SHALL). 다른 에이전트 �
 
 #### Scenario: orchestra에 판정 절이 있다
 
-- **WHEN** `grep -c "큰 작업" .claude/skills/orchestra/SKILL.md`를 돌리고 그 절을 읽는다
+- **WHEN** `grep -c "큰 작업" skills/orchestra/SKILL.md`를 돌리고 그 절을 읽는다
 - **THEN** 1 이상이다
 - **AND** 네 가지 조건과 "분석 요청"이 모두 한 절 안에 적혀 있다
 - **AND** 애매하면 큰 작업으로 본다는 지시가 있다
 
 #### Scenario: 에이전트 파일에 기준 사본이 없다
 
-- **WHEN** `.claude/agents/*.md`에서 네 가지 조건을 적은 문장을 찾는다
+- **WHEN** `agents/*.md`에서 네 가지 조건을 적은 문장을 찾는다
 - **THEN** 없다
 - **AND** preparer.md는 판정 기준을 CLI의 `instructions design` 출력과 orchestra 절에서 얻으라고 가리킨다
 
 ### Requirement: preparer는 크기 판정을 RESULT 첫 줄에 올려야 한다
 
-`.claude/agents/preparer.md`의 `준비완료` RESULT 형식 줄에는 `size=작음|큼` 필드가
+`agents/preparer.md`의 `준비완료` RESULT 형식 줄에는 `size=작음|큼` 필드가
 있어야 한다(SHALL). orchestra는 이 값으로 경로를 가른다(SHALL). 중단 RESULT
 (`RESULT: 준비중단 | ...`)의 형식은 바꾸지 않는다(MUST NOT) — `branch=` 필드가 그대로 있어야 한다.
 
@@ -78,7 +78,7 @@ orchestra가 regression-verifier를 켤지 정할 때 쓴다.
 
 #### Scenario: 준비완료 줄에 size가 있다
 
-- **WHEN** `grep -n "size=" .claude/agents/preparer.md`를 돌린다
+- **WHEN** `grep -n "size=" agents/preparer.md`를 돌린다
 - **THEN** `RESULT: 준비완료` 형식 줄에 `size=작음|큼`이 있다
 
 #### Scenario: 중단 줄은 그대로다
@@ -101,7 +101,7 @@ preparer.md의 마커 명령 블록(기존 키 보존, 멱등, 두 종료코드 
 
 #### Scenario: preparer가 tasks와 델타 선택을 지시한다
 
-- **WHEN** `.claude/agents/preparer.md`를 읽는다
+- **WHEN** `agents/preparer.md`를 읽는다
 - **THEN** `size=작음`일 때 `openspec instructions tasks`로 작업 목록을 쓰라는 지시가 있다
 - **AND** 동작이 바뀌면 작은 델타, 안 바뀌면 `skip_specs: true`를 고르라는 지시가 있다
 - **AND** `size=큼`이면 proposal까지만 쓴다는 지시가 있다
@@ -118,7 +118,7 @@ orchestra는 regression-verifier를 **큰 작업이면서 실행 코드가 바�
 명령이 있을 때만** 불러야 한다(SHALL). 이 조건을 orchestra에 적어야 한다(MUST).
 
 작은 작업 경로에서는 reviewer가 프로젝트의 테스트 명령을 **한 번** 돌려 결과를 review.md와
-RESULT에 남긴다(SHALL). `.claude/agents/reviewer.md`에 이 지시가 있어야 한다(MUST).
+RESULT에 남긴다(SHALL). `agents/reviewer.md`에 이 지시가 있어야 한다(MUST).
 테스트 명령이 없으면 돌리지 않고 "테스트 없음"으로 적는다.
 
 실행 코드가 바뀌었는지는 orchestra가 worker 보고서의 만진 파일 목록으로 판단한다(SHALL).
@@ -130,12 +130,12 @@ regression-verifier를 부르지 않았으면 orchestra는 finalizer 프롬프�
 
 #### Scenario: orchestra에 호출 조건이 있다
 
-- **WHEN** `.claude/skills/orchestra/SKILL.md`에서 regression-verifier 호출 조건을 찾는다
+- **WHEN** `skills/orchestra/SKILL.md`에서 regression-verifier 호출 조건을 찾는다
 - **THEN** "실행 코드 + 테스트 명령"이 있을 때만 부른다는 조건이 적혀 있다
 
 #### Scenario: reviewer가 작은 작업에서 테스트를 한 번 돌린다
 
-- **WHEN** `.claude/agents/reviewer.md`를 읽는다
+- **WHEN** `agents/reviewer.md`를 읽는다
 - **THEN** 프롬프트가 테스트를 맡기면 프로젝트 테스트 명령을 한 번 돌리고 결과를 review.md와 RESULT의 `tests=`에 남기라는 지시가 있다
 
 #### Scenario: 회귀 판정 줄이 없으면 finalizer가 멈춘다
@@ -155,7 +155,7 @@ preparer도 쓰게 되었으므로 그 이유가 사라졌다.
 
 #### Scenario: 생략 금지 문구가 없다
 
-- **WHEN** `grep -n "designer를 생략하면 안 된다" .claude/skills/orchestra/SKILL.md`를 돌린다
+- **WHEN** `grep -n "designer를 생략하면 안 된다" skills/orchestra/SKILL.md`를 돌린다
 - **THEN** 결과가 0건이다
 
 #### Scenario: 작은 작업이 큰 작업으로 올라간다

@@ -11,7 +11,7 @@ SDD 파이프라인의 `analyzer` 에이전트가 방안을 제시하는 절차�
 
 ### Requirement: analyzer 지침에는 동작 모드 분기가 없어야 한다
 
-`.claude/agents/analyzer.md`는 analyzer가 하는 일을 **하나의 절차**로만 기술해야 한다(SHALL).
+`agents/analyzer.md`는 analyzer가 하는 일을 **하나의 절차**로만 기술해야 한다(SHALL).
 "요구사항 + 코드베이스 → 방안 최소 3가지 + 각 안의 장단점 + 자기 의견"이 그 유일한 절차다.
 프롬프트 내용에 따라 다른 절차로 갈라지는 모드 판별 지시를 두어서는 안 된다(MUST NOT).
 
@@ -20,21 +20,21 @@ SDD 파이프라인의 `analyzer` 에이전트가 방안을 제시하는 절차�
 
 #### Scenario: frontmatter description에 평가 업무가 없다
 
-- **WHEN** `.claude/agents/analyzer.md`의 frontmatter `description` 값을 읽는다
+- **WHEN** `agents/analyzer.md`의 frontmatter `description` 값을 읽는다
 - **THEN** "사용자가 낸 안을 평가하는 일도 한다"는 취지의 문구가 없다
 - **AND** description은 여전히 "요구사항과 코드베이스 분석 → 방안 최소 3가지 + 장단점 +
   의견"이라는 analyzer의 일을 설명한다
 
 #### Scenario: 모드를 설명하는 절이 없다
 
-- **WHEN** `.claude/agents/analyzer.md` 전체를 읽는다
+- **WHEN** `agents/analyzer.md` 전체를 읽는다
 - **THEN** `## 두 가지 모드` 절이 없다
 - **AND** `## 사용자 안 평가` 절이 없다
 - **AND** 파일 어디에도 `평가 모드`, `평가할 안:` 이라는 문자열이 남아 있지 않다
 
 #### Scenario: RESULT 형식에 조건부 필드가 없다
 
-- **WHEN** `.claude/agents/analyzer.md`의 보고 형식(`RESULT:` 줄)을 읽는다
+- **WHEN** `agents/analyzer.md`의 보고 형식(`RESULT:` 줄)을 읽는다
 - **THEN** `feasible=` 필드가 없다
 - **AND** `change=`, `options=`, `recommend=`, `questions=` 필드는 그대로 남아 있다
 
@@ -52,7 +52,7 @@ analyzer 지침의 방안 생성 절은, 프롬프트에 사용자가 낸 후보
 
 #### Scenario: 방안 생성 절의 사용자 후보 규칙
 
-- **WHEN** `.claude/agents/analyzer.md`의 방안 생성 절(`### 3. 방안 최소 3가지 만들기`)을 읽는다
+- **WHEN** `agents/analyzer.md`의 방안 생성 절(`### 3. 방안 최소 3가지 만들기`)을 읽는다
 - **THEN** 프롬프트에 사용자가 낸 후보가 함께 오면 그것도 안 하나로 넣어 같은 형식으로
   평가하라는 지시가 있다
 - **AND** 성립하지 않으면 무엇이 막는지 파일:줄로 짚어 분명히 말하라는 지시가 있다
@@ -66,7 +66,7 @@ analyzer 지침의 방안 생성 절은, 프롬프트에 사용자가 낸 후보
 
 ### Requirement: 검증 안 된 안으로 설계에 들어가지 않는 안전장치가 지휘 문서에 남아야 한다
 
-`.claude/skills/orchestra/SKILL.md`는 **analyzer를 불러 사용자가 안을 고르는 중일 때**,
+`skills/orchestra/SKILL.md`는 **analyzer를 불러 사용자가 안을 고르는 중일 때**,
 사용자가 제시된 목록에 없는 자기 안을 냈으면 **바로 designer로 넘기지 않고 analyzer를 다시
 부른다**는 절차를 유지해야 한다(SHALL). 호출 형태는 평소 analyzer 호출과 같아야 하며,
 사용자 후보는 별도 모드를 깨우는 키가 아니라 **추가 후보로 프롬프트에 얹어** 전달해야
@@ -82,7 +82,7 @@ analyzer 지침의 방안 생성 절은, 프롬프트에 사용자가 낸 후보
 
 #### Scenario: 파이프라인 그림의 화살표
 
-- **WHEN** `.claude/skills/orchestra/SKILL.md`에서 analyzer를 부른 경우의 흐름(안 선택 다음)을
+- **WHEN** `skills/orchestra/SKILL.md`에서 analyzer를 부른 경우의 흐름(안 선택 다음)을
   읽는다
 - **THEN** 사용자가 자기 안을 내면 analyzer를 다시 부르고 다시 고르게 한다는 흐름이 남아 있다
 - **AND** `(평가 모드)`라는 표기가 없다
@@ -90,8 +90,8 @@ analyzer 지침의 방안 생성 절은, 프롬프트에 사용자가 낸 후보
 
 #### Scenario: 사용자 자기 안 처리 절의 호출 예시
 
-- **WHEN** `.claude/skills/orchestra/SKILL.md`의 "사용자가 목록에 없는 자기 안을 냈을 때"
-  절과 그 안의 `Agent(subagent_type: "analyzer", ...)` 예시를 읽는다
+- **WHEN** `skills/orchestra/SKILL.md`의 "사용자가 목록에 없는 자기 안을 냈을 때"
+  절과 그 안의 `Agent(subagent_type: "sdd:analyzer", ...)` 예시를 읽는다
 - **THEN** 프롬프트에 `평가할 안:` 이라는 키가 없다
 - **AND** 사용자 후보가 추가 후보임을 알 수 있는 형태(예: `사용자가 낸 안:`)로 실려 있고,
   나머지 프롬프트 구성이 평소 analyzer 호출과 같다
@@ -106,7 +106,7 @@ analyzer 지침의 방안 생성 절은, 프롬프트에 사용자가 낸 후보
 
 #### Scenario: 문서를 읽고 사용자 안 처리 방법을 알 수 있다
 
-- **WHEN** `.claude/skills/orchestra/SKILL.md`만 읽고 "analyzer를 부른 뒤 사용자가 목록에
+- **WHEN** `skills/orchestra/SKILL.md`만 읽고 "analyzer를 부른 뒤 사용자가 목록에
   없는 안을 냈을 때 무엇을 하는가"를 찾는다
 - **THEN** 답이 문서 안에 있다 (analyzer를 다시 불러 그 안을 후보로 평가받는다)
 
@@ -181,7 +181,7 @@ analyzer가 옵트인이 되었으므로, "모든 정식 요청이 방안 선택
 
 #### Scenario: analyzer.md에서 지우지 않아야 할 규칙
 
-- **WHEN** 군살을 뺀 뒤의 `.claude/agents/analyzer.md`를 읽는다
+- **WHEN** 군살을 뺀 뒤의 `agents/analyzer.md`를 읽는다
 - **THEN** 다음 지시가 모두 남아 있다: 경로를 CLI에서 얻으라는 지시,
   관찰한 사실과 추측을 구분하라는 지시, 스택이 없으면 혼자 정하지 말라는 지시,
   analysis.md 맨 위에 "추천은 analyzer 의견이고 최종 선택은 decision.md에 있다"는
@@ -197,16 +197,16 @@ regression-verifier(조건부) → finalizer`다. 어느 경로든 사용자가 
 작은 작업과 큰 작업을 가르는 기준은 `agent-instructions/lite-default-path`가 정한다.
 
 파이프라인 순서를 적은 문서는 **모두 같은 두 경로를 같은 순서로 적어야 한다**(MUST):
-`.claude/skills/orchestra/SKILL.md`(frontmatter `description`, 파이프라인 그림),
-`CLAUDE.md`, `README.md`. 한 곳만 고치면 나머지가 조용히 갈라진다.
+`skills/orchestra/SKILL.md`(frontmatter `description`, 파이프라인 그림),
+`.claude/CLAUDE.md`, `README.md`. 한 곳만 고치면 나머지가 조용히 갈라진다.
 
-`analyzer`가 사라지는 것이 아니다. `.claude/agents/analyzer.md`는 그대로 남아 있어야
+`analyzer`가 사라지는 것이 아니다. `agents/analyzer.md`는 그대로 남아 있어야
 하며(MUST), analyzer를 부른 경우의 방안 제시 → 선택 → 재호출 흐름도 그대로 유지되어야
 한다(MUST). analyzer를 부르면 그 change는 큰 작업 경로로 간다.
 
 #### Scenario: 세 문서의 순서 문구가 일치한다
 
-- **WHEN** `.claude/skills/orchestra/SKILL.md`, `CLAUDE.md`, `README.md`에서 파이프라인
+- **WHEN** `skills/orchestra/SKILL.md`, `.claude/CLAUDE.md`, `README.md`에서 파이프라인
   순서를 적은 대목을 각각 읽는다
 - **THEN** 세 곳 모두 기본(작은 작업) 경로가 `preparer` 다음 `worker`, 그 다음 `reviewer`, 그 뒤 `finalizer`다
 - **AND** 세 곳 모두 큰 작업 경로가 `preparer` 다음 `designer`이고, `reviewer`와
@@ -215,26 +215,26 @@ regression-verifier(조건부) → finalizer`다. 어느 경로든 사용자가 
 
 #### Scenario: 파이프라인 그림에 방안 선택 관문이 기본 단계로 없다
 
-- **WHEN** `.claude/skills/orchestra/SKILL.md`의 파이프라인 그림을 읽는다
+- **WHEN** `skills/orchestra/SKILL.md`의 파이프라인 그림을 읽는다
 - **THEN** `[preparer]` 다음이 크기 분기이고, 작은 작업 갈래는 `[worker]`, 큰 작업 갈래는 `[designer]`로 간다
 - **AND** `[analyzer]` 단계와 `★ 사용자가 안을 고른다` 줄이 기본 흐름 안에 없다
 - **AND** analyzer를 부른 경우의 흐름은 별도 절(옵트인 절)에서 찾을 수 있다
 
 #### Scenario: analyzer 파일이 남아 있다
 
-- **WHEN** `.claude/agents/analyzer.md`를 찾는다
+- **WHEN** `agents/analyzer.md`를 찾는다
 - **THEN** 파일이 존재한다
 - **AND** frontmatter의 `name:`, `description:`, `model:`, `tools:` 키가 모두 있다
 
 #### Scenario: 묻는 지점 표에서 방안 선택이 조건부로 내려간다
 
-- **WHEN** `.claude/skills/orchestra/SKILL.md`의 "사용자에게 묻는 지점" 표를 읽는다
+- **WHEN** `skills/orchestra/SKILL.md`의 "사용자에게 묻는 지점" 표를 읽는다
 - **THEN** 방안 선택이 무조건 `필수`가 아니라 "analyzer를 불렀을 때 필수"임을 알 수 있다
 - **AND** 범위 밖 확인, 조건부 통과, 커밋 관문은 여전히 `필수`로 남아 있다
 
 ### Requirement: analyzer를 부르는 신호와 판단 기준이 지휘 문서에 적혀 있어야 한다
 
-`.claude/skills/orchestra/SKILL.md`는 analyzer를 **언제 부르는지**를 사람이 보고 판별할 수
+`skills/orchestra/SKILL.md`는 analyzer를 **언제 부르는지**를 사람이 보고 판별할 수
 있는 형태로 적어야 한다(SHALL). "사용자가 원하면 부른다" 같은 애매한 문장만 적어서는
 안 된다(MUST NOT) — 그렇게 적으면 실제로 아무도 부르지 않는다.
 
@@ -250,7 +250,7 @@ regression-verifier(조건부) → finalizer`다. 어느 경로든 사용자가 
 
 #### Scenario: 신호 목록이 실제 문구로 적혀 있다
 
-- **WHEN** `.claude/skills/orchestra/SKILL.md`에서 analyzer를 부르는 조건을 적은 절을 읽는다
+- **WHEN** `skills/orchestra/SKILL.md`에서 analyzer를 부르는 조건을 적은 절을 읽는다
 - **THEN** 사용자가 할 수 있는 말이 따옴표로 인용된 예시 목록으로 있다
 - **AND** 그 목록에 `분석`, `방안`, `선택지`, `analyzer` 각각을 담은 말이 최소 하나씩 있다
 - **AND** 에이전트 이름을 정확히 대지 않아도 걸린다는 것이 명시되어 있다
@@ -271,18 +271,18 @@ regression-verifier(조건부) → finalizer`다. 어느 경로든 사용자가 
 
 ### Requirement: analyzer 없이 부르는 designer 호출은 채택안이 없음을 명시해야 한다
 
-`.claude/skills/orchestra/SKILL.md`의 designer 호출 절차는, analyzer를 부르지 않은 큰 작업
+`skills/orchestra/SKILL.md`의 designer 호출 절차는, analyzer를 부르지 않은 큰 작업
 경로(작은 작업에서 큰 작업으로 올라온 경우 포함)에서 designer 프롬프트에 `analyzer 생략: 예`와
 `채택안: 없음`을 싣도록 지시해야 한다(SHALL).
 
 이 두 줄이 빠지면 designer는 `RESULT: 설계중단 | reason=채택안 없음`으로 멈춘다.
-`.claude/agents/designer.md`가 "채택안도 `analyzer 생략: 예`도 둘 다 없으면 설계를 시작하지
+`agents/designer.md`가 "채택안도 `analyzer 생략: 예`도 둘 다 없으면 설계를 시작하지
 마라"고 규정하고 있기 때문이다. analyzer 없이 큰 작업으로 가는 것이 **예외가 아니라 평소
 경로**이므로, 지휘 문서의 그 호출 예시가 이 두 줄을 가지고 있어야 한다(MUST).
 
 #### Scenario: 기본 designer 호출 예시
 
-- **WHEN** `.claude/skills/orchestra/SKILL.md`의 designer 호출 절차와 그 프롬프트 예시를 읽는다
+- **WHEN** `skills/orchestra/SKILL.md`의 designer 호출 절차와 그 프롬프트 예시를 읽는다
 - **THEN** analyzer를 부르지 않은 경우의 예시에 `analyzer 생략: 예`가 들어 있다
 - **AND** 같은 예시에 `채택안: 없음`이 들어 있고, 기준이 proposal의 받아들일 조건임을 알 수 있다
 - **AND** 이 두 줄이 빠지면 designer가 멈춘다는 이유가 함께 적혀 있다

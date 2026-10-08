@@ -20,7 +20,7 @@ SDD 파이프라인의 에이전트가 change의 `.openspec.yaml`에 `skip_specs
 
 #### Scenario: preparer가 skip_specs를 설정하는 지침
 
-- **WHEN** `.claude/agents/preparer.md`의 `skip_specs: true` 설정 지침을 읽는다
+- **WHEN** `agents/preparer.md`의 `skip_specs: true` 설정 지침을 읽는다
 - **THEN** `.openspec.yaml`이 이미 존재하는 파일임이 명시되어 있다
 - **AND** 기존 키를 전부 보존한 채 마커만 덧붙이는, 복사해 바로 실행할 수 있는
   명령 코드블록이 들어 있다
@@ -28,7 +28,7 @@ SDD 파이프라인의 에이전트가 change의 `.openspec.yaml`에 `skip_specs
 
 #### Scenario: designer가 retire_capabilities를 설정하는 지침
 
-- **WHEN** `.claude/agents/designer.md`의 `retire_capabilities: true` 설정 지침을 읽는다
+- **WHEN** `agents/designer.md`의 `retire_capabilities: true` 설정 지침을 읽는다
 - **THEN** preparer와 동일한 형태의 보존 문구·명령 코드블록·금지 문구가 들어 있다
 
 #### Scenario: 지침대로 실행하면 기존 키가 살아남는다
@@ -75,13 +75,13 @@ SDD 파이프라인의 에이전트가 change의 `.openspec.yaml`에 `skip_specs
 
 #### Scenario: designer의 검증 절
 
-- **WHEN** `.claude/agents/designer.md`의 검증 절을 읽는다
+- **WHEN** `agents/designer.md`의 검증 절을 읽는다
 - **THEN** `openspec status --change "<이름>" --json`의 종료코드를 확인하라는
   지시가 있고, 0이 아니면 메타데이터가 깨진 것이라는 설명이 함께 있다
 
 #### Scenario: preparer의 확인 절
 
-- **WHEN** `.claude/agents/preparer.md`의 확인 절을 읽는다
+- **WHEN** `agents/preparer.md`의 확인 절을 읽는다
 - **THEN** `validate`와 `status --change ... --json`의 종료코드를 모두 확인하라는
   지시가 있다
 
@@ -129,7 +129,7 @@ SDD 파이프라인의 에이전트가 change의 `.openspec.yaml`에 `skip_specs
 
 #### Scenario: preparer 확인 절의 exit=1 해석
 
-- **WHEN** `.claude/agents/preparer.md`의 확인 절에서 델타 없음 에러 설명을 읽는다
+- **WHEN** `agents/preparer.md`의 확인 절에서 델타 없음 에러 설명을 읽는다
 - **THEN** 마커를 설정하지 않았을 때만 정상이라는 조건이 붙어 있다
 - **AND** `skip_specs`를 설정했는데도 이 에러가 나오면 마커가 반영되지 않은 것이니
   `.openspec.yaml`을 확인하라는 안내가 함께 있다

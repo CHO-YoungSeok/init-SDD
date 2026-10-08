@@ -9,7 +9,7 @@ preparer가 중단할 때 이미 만들어 둔 브랜치의 존재가 항상 보
 
 ### Requirement: preparer의 중단 보고에는 브랜치 상태가 항상 있어야 한다
 
-`.claude/agents/preparer.md`의 중단 RESULT 형식 줄(`RESULT: 준비중단 | ...`)은
+`agents/preparer.md`의 중단 RESULT 형식 줄(`RESULT: 준비중단 | ...`)은
 `branch=<브랜치 이름 또는 none>` 필드를 포함해야 한다(SHALL). 지시문은 이 필드가 왜
 필요한지 — 브랜치를 4단계에서, change를 5단계에서 만들기 때문에 5단계에서 멈추면
 브랜치만 남는다 — 를 한 줄 근거로 함께 밝혀야 한다(SHALL).

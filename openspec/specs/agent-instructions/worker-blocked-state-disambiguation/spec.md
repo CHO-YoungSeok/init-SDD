@@ -9,7 +9,7 @@ worker가 OpenSpec의 `blocked` 상태를 원인별로 갈라 보고하게 해�
 
 ### Requirement: worker는 blocked 상태를 원인별로 구분해 보고해야 한다
 
-`.claude/agents/worker.md`의 정식 모드 1단계는, `openspec instructions apply`가 돌려준
+`agents/worker.md`의 정식 모드 1단계는, `openspec instructions apply`가 돌려준
 `state: "blocked"`를 `missingArtifacts` 값의 유무로 **두 갈래로 나눠** 보고하도록
 worker에게 지시해야 한다(SHALL). 지시문에는 `missingArtifacts`라는 낱말이 최소 1회
 등장해야 한다(SHALL).

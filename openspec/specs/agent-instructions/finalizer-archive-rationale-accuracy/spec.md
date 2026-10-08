@@ -8,7 +8,7 @@ finalizer가 "사용자 승인 없이 archive하지 않는다"는 정책을 실�
 
 ### Requirement: finalizer의 archive 금지 근거는 실측과 일치해야 한다
 
-`.claude/agents/finalizer.md` 5단계(archive)는 사용자 승인 없이 archive하지 않는 이유로
+`agents/finalizer.md` 5단계(archive)는 사용자 승인 없이 archive하지 않는 이유로
 다음 두 가지만 근거로 들어야 한다(SHALL):
 ① `openspec archive`는 change 디렉터리를 옮기며 **되돌릴 수 없으므로 사용자가 정한다**,
 ② stdin이 없어서 `--yes` 없이는 확인 프롬프트에서 죽는다 — 그래서 승인 뒤에 돌릴 때는

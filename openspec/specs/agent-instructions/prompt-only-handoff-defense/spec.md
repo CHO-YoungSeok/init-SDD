@@ -9,7 +9,7 @@
 
 ### Requirement: designer는 채택안이 프롬프트에 없으면 멈춰야 한다
 
-`.claude/agents/designer.md`의 중단 사유 목록에 "채택안 없음"(또는 동등한 표현)이 있어야
+`agents/designer.md`의 중단 사유 목록에 "채택안 없음"(또는 동등한 표현)이 있어야
 한다(SHALL). 프롬프트에 `사용자가 고른 안:`도 `analyzer 생략: 예`도 **둘 다 없으면**
 designer는 설계를 시작하지 말고 `RESULT: 설계중단 | change=<이름> | reason=채택안 없음`으로
 멈춰야 한다(MUST). analyzer의 추천안을 사용자의 선택으로 대체해서는 안 된다(MUST NOT).
@@ -32,7 +32,7 @@ designer는 설계를 시작하지 말고 `RESULT: 설계중단 | change=<이름
 
 ### Requirement: reviewer와 regression-verifier는 만진 파일 목록이 없어도 멈추지 않고 드러내야 한다
 
-`.claude/agents/reviewer.md`와 `.claude/agents/regression-verifier.md`는 각각, 프롬프트에
+`agents/reviewer.md`와 `agents/regression-verifier.md`는 각각, 프롬프트에
 `만진 파일` 목록이 없을 때의 처리를 명시해야 한다(SHALL). 목록이 없다는 이유로 멈춰서는
 안 되며(MUST NOT), 전체 diff를 범위로 삼되 그렇게 했다는 사실을 보고서에 한 줄로 적고(SHALL),
 RESULT 첫 줄에 `scope=전체diff`를 남겨야 한다(SHALL). 이 필드 이름은 두 파일에서 동일해야

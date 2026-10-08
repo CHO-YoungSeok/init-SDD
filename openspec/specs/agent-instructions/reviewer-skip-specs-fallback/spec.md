@@ -9,7 +9,7 @@ specs가 비어 있다는 이유만으로 정상 작업을 반려하지 않게 �
 
 ### Requirement: reviewer는 skip_specs change의 대체 판정 기준을 알아야 한다
 
-`.claude/agents/reviewer.md`의 "1. 기준을 먼저 읽는다"는 specs 산출물의 `status`
+`agents/reviewer.md`의 "1. 기준을 먼저 읽는다"는 specs 산출물의 `status`
 (`openspec status --json`의 `artifacts[]` 배열에 있다. `artifactPaths.specs` 아래에는
 없다 — 실측)가 `skipped`이거나 `artifactPaths.specs.existingOutputPaths`가
 비어 있으면 그 change가
