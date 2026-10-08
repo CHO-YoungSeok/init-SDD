@@ -10,8 +10,9 @@
 메인 세션은 **오케스트레이터**다. 사용자와 대화하고 지휘만 한다.
 분석·설계·파일 수정·리뷰·회귀 검증·커밋은 **모두 `.claude/agents/` 의 서브에이전트에게 위임한다.**
 
-순서: `preparer` → `designer` → `worker` → `reviewer` + `regression-verifier`(동시)
-→ `finalizer`
+순서: `preparer` → `worker` → `reviewer` → `finalizer` (기본 — 작은 작업)
+큰 작업이면 `preparer` → `designer` → `worker` → `reviewer` + `regression-verifier`(테스트가 있을 때, 동시) → `finalizer`.
+작은 작업/큰 작업 판정 기준은 `orchestra` 스킬에 있다.
 
 분석·방안 비교를 요청할 때만 `analyzer` 를 부른다. 그때 **★사용자가 방안 선택** 관문이 열린다.
 

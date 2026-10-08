@@ -4,7 +4,8 @@
 
 `.claude/` 의 에이전트와 지휘 스킬을 얹고 `openspec init` 한 번 돌리면, 그 프로젝트의 Claude Code가
 "요구사항 정리 → 설계 → 구현 → 리뷰 → 회귀 검증 → 커밋" 순서로 일하게 된다. 각 단계는 전용
-서브에이전트가 맡는다. 분석과 **사용자가 방안 선택**하는 단계는 기본 경로에는 없다 —
+서브에이전트가 맡는다. 기본(작은 작업)은 `preparer → worker → reviewer → finalizer`이고, 큰 작업이면
+사이에 `designer`(설계)가 끼고 테스트가 있을 때 `regression-verifier`(회귀 검증)가 붙는다. 분석과 **사용자가 방안 선택**하는 단계는 기본 경로에는 없다 —
 `"분석해줘"`, `"방안 뽑아줘"`처럼 방안 비교를 요청하면 그때 열린다.
 
 ## 이게 왜 필요한가
@@ -12,9 +13,10 @@
 Claude Code에게 큰 일을 그냥 맡기면, 분석과 설계와 구현이 한 덩어리로 섞여서
 **어떤 방향으로 갈지 사람이 개입할 지점이 없다.** 다 끝난 뒤에야 "이게 아닌데"를 알게 된다.
 
-이 구조는 그 지점을 만든다. 기본 경로에도 사람이 개입할 지점이 넷 있다 — **범위 밖 확인**
-(요구사항 정리 직후, "그것도 해줘" 할 기회), **설계 요약 알림**(설계가 끝났을 때),
-**조건부 통과 확인**(리뷰에서 지적이 남았을 때), **커밋 직전 확인**(diff 요약을 보고 확인).
+이 구조는 그 지점을 만든다. 작은 작업에는 사람이 개입할 지점이 셋 있다 — **범위 밖 확인**
+(요구사항 정리 직후, "그것도 해줘" 할 기회), **조건부 통과 확인**(리뷰에서 지적이 남았을 때),
+**커밋 직전 확인**(diff 요약을 보고 확인). 큰 작업에는 여기에 **결정 기록**과 **설계 요약
+알림**(설계가 끝났을 때)이 더해진다.
 사용자가 원하면 여기에 **방안 3가지를 들고 와서 사람에게 고르게 하는** 방안 선택 관문을
 언제든 열 수 있다 — analyzer를 부르면 뜬다. 그 선택은 파일로 기록되고(`decision.md`),
 리뷰 단계에서 "고른 대로 됐는지"를 검사한다.
@@ -78,10 +80,12 @@ cd /path/to/your-project
 # OpenSpec 초기화 (openspec/ 디렉터리와 공식 스킬 6개 + /opsx 명령 6개를 만든다)
 openspec init --tools claude          # 산출물 언어를 정하려면 --language ko (또는 en)
 
-# 에이전트와 지휘 스킬, 모델 등급 스킬 복사
+# 에이전트와 지휘 스킬, 모델 등급·공용 규칙·sync 스킬 복사
 cp -r "$SDD_SRC"/.claude/agents .claude/
 cp -r "$SDD_SRC"/.claude/skills/orchestra .claude/skills/
 cp -r "$SDD_SRC"/.claude/skills/agent-model-tier .claude/skills/
+cp -r "$SDD_SRC"/.claude/skills/sdd-rules .claude/skills/       # 에이전트 7개가 함께 지키는 공용 규칙
+cp -r "$SDD_SRC"/.claude/skills/sdd-sync .claude/skills/        # finalizer의 spec 병합 절차
 cp "$SDD_SRC"/.claude/settings.json .claude/      # 권한 프롬프트를 줄인다. 이미 있으면 내용을 확인하고 옮겨라
 ```
 
@@ -117,6 +121,8 @@ sed -n '/init-SDD:begin/,/init-SDD:end/p' "$SDD_SRC"/CLAUDE.md >> CLAUDE.md   # 
 - `.claude/agents/{preparer,analyzer,designer,worker,reviewer,regression-verifier,finalizer}.md`
 - `.claude/skills/orchestra/`
 - `.claude/skills/agent-model-tier/`
+- `.claude/skills/sdd-rules/`
+- `.claude/skills/sdd-sync/`
 - `.claude/settings.json` → 이미 있으면 **덮어쓰지 말고 내용을 직접 확인해서 필요한 줄을
   옮겨라** (`install.sh` 도 이 파일은 합치지 않는다. JSON 을 합치면 키가 겹칠 때 한쪽을
   버려야 하고, 어느 쪽을 버렸는지 사용자가 알 수 없다. 그래서 건너뛰고 원본 경로만 알려 준다)
@@ -125,18 +131,16 @@ sed -n '/init-SDD:begin/,/init-SDD:end/p' "$SDD_SRC"/CLAUDE.md >> CLAUDE.md   # 
 
 ```bash
 ls .claude/agents | wc -l                              # 8
-ls .claude/skills                                      # openspec-* 6개 + orchestra + agent-model-tier
-ls .claude/skills/openspec-{explore,propose,update-change,apply-change,sync-specs,archive-change}/SKILL.md
-ls .claude/skills/agent-model-tier/SKILL.md
+ls .claude/skills/{orchestra,agent-model-tier,sdd-rules,sdd-sync}/SKILL.md   # 4개 모두 있어야 한다
 openspec list                                          # 에러 없이 돌아야 한다
 ```
 
-스킬이 하나라도 없으면 (전역 설정에 따라 안 깔릴 수 있다):
-```bash
-openspec config set delivery both
-openspec config set profile core
-openspec update --force
-```
+`openspec init`이 까는 공식 스킬(`openspec-*`)은 없어도 파이프라인은 돈다. 에이전트는 그 스킬을
+부르지도 읽지도 않는다.
+
+**이미 설치한 프로젝트**라면 `install.sh`를 다시 돌려도 에이전트 파일은 건너뛰어진다. 두 스킬
+(`sdd-rules`, `sdd-sync`)은 새로 복사되니, 건너뛴 에이전트 파일을 이 저장소의 새 판과 비교해
+옮겨라. 새 판은 두 스킬을 주입받는다.
 
 **Claude Code를 새 세션으로 다시 열어야** 새 에이전트와 스킬이 잡힌다.
 
@@ -188,23 +192,24 @@ context: |
 | 일 | 경로 | 서브에이전트 호출 | 묻는 횟수 |
 |---|---|---|---|
 | 오타·주석·이름 변경 (**동작 안 바뀜**) | worker → finalizer | 2번 | 0 |
-| 새 기능·리팩터링·원인이 뻔한 버그 | 기본 경로: `preparer → designer → worker → reviewer + regression-verifier → finalizer` | 6번 | 3 |
+| 작은 작업 (기본) | `preparer → worker → reviewer → finalizer` | 4번 | 3 |
+| 큰 작업 | `preparer → designer → worker → reviewer (+ regression-verifier) → finalizer` | 5~6번 | 3 |
 | "이거 왜 이래?" 조사 | analyzer 1번 | 1번 | 0 |
 
-`원인이 뻔한 버그`는 더 이상 예외 경로가 아니다 — 기본 경로 자체가 analyzer 없이 도는
-경로가 됐으므로, "새 기능·리팩터링"과 같은 줄이다. 방안 비교가 필요해지면 그 자리에서
-`"방안 뽑아줘"`라고 말해 analyzer를 끼워 넣으면 7번 호출, 묻는 횟수 4가 된다.
+작은 작업과 큰 작업을 가르는 판정 기준은 `orchestra` 스킬에 있다 (이 문서에 옮겨 적지 않는다).
+방안 비교가 필요해지면 그 자리에서 `"방안 뽑아줘"`라고 말해 analyzer를 끼워 넣으면
+호출이 한 번 늘고 묻는 횟수가 4가 된다.
 
 ## 7개 서브에이전트
 
 | 에이전트 | 하는 일 | 모델 |
 |---|---|---|
-| `preparer` | 요구사항 정리, 작업 브랜치 + OpenSpec change 생성, proposal 작성 | sonnet |
+| `preparer` | 요구사항 정리, 작업 브랜치 + OpenSpec change 생성, proposal 작성 (작은 작업이면 작업 목록까지) | sonnet |
 | `analyzer` | 코드베이스 분석, **방안 최소 3가지 + 의견과 근거** (부를 때만 돈다) | opus |
-| `designer` | 결정 기록(decision.md), specs 델타, design.md, tasks.md | opus |
+| `designer` | 큰 작업일 때만 — 결정 기록(decision.md), specs 델타, design.md, tasks.md | opus |
 | `worker` | 구현, 파일 수정, 테스트 (코드를 만지는 유일한 에이전트) | sonnet |
 | `reviewer` | 요구사항 충족·설계 준수·작업 완료 검증 (읽기 전용) | opus |
-| `regression-verifier` | 기존 동작이 깨졌는지 (읽기 전용, reviewer와 병렬) | sonnet |
+| `regression-verifier` | 기존 동작이 깨졌는지 (읽기 전용, reviewer와 병렬). 큰 작업이고 테스트 명령이 있을 때만 | sonnet |
 | `finalizer` | 메인 spec 갱신(sync) → 커밋 | sonnet |
 
 모델은 각 에이전트 파일의 `model:` 한 줄로 바꿀 수 있고, `agent-model-tier` 스킬을 쓰면
@@ -225,9 +230,9 @@ context: |
 | `proposal.md` | preparer | 무엇을 / 왜 + 받아들일 조건 |
 | `analysis.md` | analyzer | 분석 결과와 방안 3가지 (스키마 밖 파일) |
 | `decision.md` | designer | **사용자가 고른 안** (리뷰의 기준) |
-| `specs/<capability>/spec.md` | designer | 요구사항 변화분(델타) |
+| `specs/<capability>/spec.md` | designer (작은 작업이면 preparer) | 요구사항 변화분(델타) |
 | `design.md` | designer | 어떻게 (조건부) |
-| `tasks.md` | designer | 작업 목록 |
+| `tasks.md` | designer (작은 작업이면 preparer) | 작업 목록 |
 | `review.md` | reviewer | 판정 (finalizer가 읽어 확인) |
 | `.openspec.yaml` | `openspec new change` 가 만들고, preparer / designer 가 마커만 덧붙임 | spec 없는 change 표시(`skip_specs`) · capability 은퇴 표시(`retire_capabilities`) |
 
@@ -250,13 +255,12 @@ context: |
   모든 에이전트의 첫 명령이 실패한다.
 - **서브에이전트는 사용자에게 직접 물을 수 없다.** 질문은 보고서에 담겨 오케스트레이터를 거친다.
   그래서 범위 밖 확인·방안 선택 같은 관문이 메인 세션에 있다.
-- **서브에이전트에게는 `Skill` 도구가 없을 수 있다.** 그래서 에이전트들은 OpenSpec 스킬을
-  "부르는" 대신 `.claude/skills/<이름>/SKILL.md` 를 읽고 그 절차를 따르도록 되어 있다.
-  결과는 같다. 그래서 `openspec init` 으로 그 문서들을 깔아 두는 게 중요하다.
+- **에이전트는 openspec 스킬을 부르지도 읽지도 않는다.** `openspec instructions` 출력과 공용 규칙
+  `sdd-rules`, spec 병합 절차 `sdd-sync`를 따른다.
 - **되돌릴 수 없는 일은 에이전트가 하지 않는다.** `git push`, `openspec archive`,
   메인 spec 파일 삭제는 사용자가 명시적으로 요청해야 한다.
-- **기본 경로 한 번은 서브에이전트 6번 호출이다** (designer·reviewer가 opus). analyzer를
-  부르면 7번이 된다(그때는 analyzer도 opus). 느리고 토큰을 많이 쓴다. 오타 수정에는 자동으로
+- **작은 작업 한 번은 서브에이전트 4번 호출이고, 큰 작업은 5~6번이다** (designer·reviewer가 opus).
+  analyzer를 부르면 한 번 늘어난다(그때는 analyzer도 opus). 느리고 토큰을 많이 쓴다. 오타 수정에는 자동으로
   경량 경로가 쓰인다. 비용이 부담되면 `agent-model-tier` 스킬로 등급을 내리거나, 해당
   파일들의 `model:` 을 손으로 내려라.
 - **대화형 세션에서만 제대로 돈다.** 범위 밖 확인, 커밋 직전 확인 같은 필수 질문이 대화형
@@ -267,11 +271,10 @@ context: |
   **그걸 직접 쓰면 결정 기록(decision.md)과 리뷰 단계가 사라진다.** analyzer를 부른 경우라면
   방안 선택 관문까지 함께 건너뛰게 된다. 평소엔 그냥 말로 시켜라.
 - 에이전트 파일과 이 문서는 **한국어**다. 파이프라인도 한국어로 말한다.
-  다른 언어로 쓰려면 `.claude/agents/*.md` 와 `.claude/skills/orchestra/SKILL.md` 를 번역하고,
+  다른 언어로 쓰려면 `.claude/agents/*.md` 와 `.claude/skills/{orchestra,sdd-rules,sdd-sync}/SKILL.md` 를 번역하고,
   산출물 언어는 `openspec init --language <언어>` 로 정한다.
 - OpenSpec CLI 1.12 기준으로 만들었다. 버전이 올라 명령이 바뀌면, 에이전트는
-  `.claude/skills/openspec-*/SKILL.md` (openspec이 직접 깔아준 문서)를 정답으로 삼도록
-  되어 있어서 대부분 자동으로 따라간다.
+  `openspec instructions` 출력을 정답으로 삼도록 되어 있어서 대부분 자동으로 따라간다.
 - **이 저장소의 `.claude/skills/openspec-*` 은 `openspec init`이 만든 사본이다.**
   대상 프로젝트에서는 복사하지 말고 `openspec init --tools claude`로 직접 만들어라
   (위 "방법 2 — 손으로" 참고). 그래야 설치된 CLI 버전과 맞는 문서가 깔린다.
