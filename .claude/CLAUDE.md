@@ -1,3 +1,12 @@
+# 이 저장소를 고칠 때 (개발자 안내)
+
+- 이 저장소는 플러그인 `sdd`의 루트다. `claude --plugin-dir .`로 띄운다.
+- 이 저장소도 SDD로 개발한다. 에이전트 원본은 `agents/`, 스킬 원본은 `skills/`에 있다.
+- 아래 표식 구획은 기존 설치 방식(`install.sh`, `init-sdd`)이 뽑아 쓰는 조각 원본이다. 그 안의 `.claude/agents/`,
+  `.claude/skills/orchestra/SKILL.md` 경로는 설치 대상 프로젝트 기준이다. 이 저장소에서는 `agents/`, `skills/orchestra/SKILL.md`로
+  읽고, 에이전트 이름에는 `sdd:`를 붙인다(예: `sdd:worker`).
+- 표식 구획 안은 고치지 않는다.
+
 <!-- 템플릿 안내: 이 파일을 통째로 복사하지 마라.
      아래 내용을 네 프로젝트의 CLAUDE.md **끝에 덧붙여라.**
      install.sh 를 쓰면 알아서 덧붙인다. -->

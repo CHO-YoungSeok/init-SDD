@@ -26,19 +26,24 @@ Claude Code에게 큰 일을 그냥 맡기면, 분석과 설계와 구현이 한
 | 필요한 것 | 확인 | 없으면 |
 |---|---|---|
 | Claude Code | `claude --version` | [설치 안내](https://claude.com/claude-code) |
-| OpenSpec CLI | `openspec --version` (1.12 이상) | `npm i -g @fission-ai/openspec` 또는 `brew update && brew install openspec` |
+| OpenSpec CLI | 플러그인: `node --version`, `npx --version` (Node/npx만 있으면 된다 — `sdd-openspec`이 1.14.1을 받는다) / 복사·링크 방식: `openspec --version` (1.12 이상) | 플러그인: Node.js 설치 / 복사·링크 방식: `npm i -g @fission-ai/openspec` 또는 `brew update && brew install openspec` |
 | git 저장소 | `git status` | `git init` |
 
 ## 설치
 
-### 먼저 고른다 — 복사 방식인가 링크 방식인가
+### 먼저 고른다 — 플러그인인가, 복사 방식인가, 링크 방식인가
 
-얹는 방식이 두 가지다. 하는 일은 같지만 파일이 **어디에 놓이는지**가 다르다.
+얹는 방식이 세 가지다. 하는 일은 같지만 파일이 **어디에 놓이는지**가 다르다.
+**플러그인이 권장 방식이다.** 복사 방식과 링크 방식은 기존 설치 방식으로 남아 있다.
 
 | 상황 | 쓰는 것 |
 |---|---|
-| 팀이 SDD 방식에 합의했다. 설정을 프로젝트 저장소에 두어도 된다 | **복사 방식** — `install.sh` (아래 방법 1·2) |
+| 새로 시작한다 (권장) | **플러그인** — `/plugin marketplace add`, `/plugin install sdd@sdd-marketplace`, 그 뒤 `/sdd:init` (아래 "플러그인으로 설치") |
+| 팀이 SDD 방식에 합의했고, 플러그인 대신 설정을 프로젝트 저장소에 두어야 한다 | **복사 방식** — `install.sh` (아래 방법 1·2) |
 | 개인이 자기 agentic 설정을 별도 git으로 관리한다. 공유 저장소에 남기지 않는다 | **링크 방식** — `init-sdd` 스킬 (`.claude/skills/init-sdd/SKILL.md`) |
+
+**플러그인**은 에이전트와 스킬을 Claude Code 플러그인 `sdd`로 싣는다. 대상 프로젝트의 `.claude/`에는
+아무것도 복사하지 않는다. 에이전트 이름은 `sdd:<이름>`(예: `sdd:worker`), 스킬은 `/sdd:orchestra`, `/sdd:init`이다.
 
 **복사 방식**은 에이전트와 스킬을 대상 프로젝트 안으로 복사해 넣는다. 그 파일은 프로젝트
 저장소에 커밋될 수 있는 자리에 놓인다 — 팀이 같은 구성을 쓰기로 했다면 그게 편하다.
@@ -48,9 +53,62 @@ Claude Code에게 큰 일을 그냥 맡기면, 분석과 설계와 구현이 한
 걸기·풀기·상태 보기 절차는 `init-sdd` 스킬에 있다. Claude Code에서 "개인 설정을 별도
 저장소로 분리해줘"라고 말하면 그 스킬이 불린다.
 
-고민되면 **복사 방식**으로 시작해라. 나중에 링크 방식으로 바꿀 수 있다.
+고민되면 **플러그인**으로 시작해라.
 
-### 방법 1 — install.sh (권장)
+### 플러그인으로 설치 (권장)
+
+Claude Code 안에서 두 줄:
+
+```text
+/plugin marketplace add CHO-YoungSeok/init-SDD
+/plugin install sdd@sdd-marketplace
+```
+
+로컬 복제본이 있으면 `/plugin marketplace add <복제본 경로>`로 등록해도 된다.
+그 뒤 SDD를 쓸 프로젝트에서 `/sdd:init`을 한 번 돌린다. `openspec/`을 초기화하고, `openspec/config.yaml`의
+`context:` 초안과 권한 목록을 보여 주고 동의를 받은 뒤에 기록한다.
+
+`openspec init --tools claude`가 까는 `.claude/commands/opsx/`와 `.claude/skills/openspec-*`는 이 파이프라인에
+필요 없다(지워도, 남겨도 된다). `/sdd:init`은 `--tools none`으로 초기화해서 그것들을 깔지 않는다.
+
+**훅 켜기·끄기:** `/sdd:init`이 만드는 표식 파일 `openspec/.sdd`가 있는 프로젝트에서만 SessionStart 훅이
+지휘 규칙과 점검 결과를 넣는다. 표식을 커밋하면 같은 저장소에서 플러그인을 깐 팀원에게도 켜진다.
+그 프로젝트에서 끄려면 표식을 지운다. 모든 프로젝트에서 끄려면 `/plugin disable sdd`.
+
+**업데이트:**
+
+```bash
+claude plugin marketplace update sdd-marketplace
+claude plugin update sdd@sdd-marketplace
+```
+
+그 뒤 Claude Code를 다시 시작한다(Claude Code 2.1.294의 `--help`로 확인한 명령). 새 판을 낼 때는
+`.claude-plugin/plugin.json`의 `version`을 올린다.
+
+**팀 배포:** 프로젝트 `.claude/settings.json`에 `extraKnownMarketplaces`와 `enabledPlugins`를 넣으면
+팀원이 그 저장소를 신뢰할 때 플러그인 설치를 안내받는다.
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "sdd-marketplace": { "source": { "source": "github", "repo": "CHO-YoungSeok/init-SDD" } }
+  },
+  "enabledPlugins": { "sdd@sdd-marketplace": true }
+}
+```
+
+**Windows:** 훅과 `bin/`의 실행 파일이 bash 스크립트라 bash(Git Bash 또는 WSL)가 필요하다.
+
+### 기존 방식에서 플러그인으로 옮기기
+
+- **복사 방식으로 깐 프로젝트:** `.claude/agents`, `.claude/skills/{orchestra,sdd-rules,sdd-sync}`와 남아 있는
+  모델 등급 스킬 디렉터리를 지운 뒤 플러그인을 설치한다.
+- **링크 방식으로 깐 프로젝트:** `init-sdd` 스킬의 "풀기"로 링크를 푼 뒤 플러그인을 설치한다.
+- 두 경우 모두 `CLAUDE.md`의 `<!-- init-SDD:begin -->` ~ `<!-- init-SDD:end -->` 구획은 훅이 대신하므로 지워도 된다.
+- 설치 뒤 `/sdd:init`을 한 번 돌려 훅 표식 `openspec/.sdd`를 만든다. 이미 초기화된 `openspec/`은 건너뛰고 표식만 생긴다.
+- 기존 복사본·링크와 플러그인을 함께 두면 같은 에이전트가 두 이름(`sdd:<이름>`, `<이름>`)으로 실린다.
+
+### 방법 1 — install.sh
 
 ```bash
 SDD_SRC="$(mktemp -d)/init-SDD"              # 받을 임시 폴더 (매번 새로 만든다)
@@ -80,12 +138,12 @@ cd /path/to/your-project
 # OpenSpec 초기화 (openspec/ 디렉터리와 공식 스킬 6개 + /opsx 명령 6개를 만든다)
 openspec init --tools claude          # 산출물 언어를 정하려면 --language ko (또는 en)
 
-# 에이전트와 지휘 스킬, 모델 등급·공용 규칙·sync 스킬 복사
-cp -r "$SDD_SRC"/.claude/agents .claude/
-cp -r "$SDD_SRC"/.claude/skills/orchestra .claude/skills/
-cp -r "$SDD_SRC"/.claude/skills/agent-model-tier .claude/skills/
-cp -r "$SDD_SRC"/.claude/skills/sdd-rules .claude/skills/       # 에이전트 7개가 함께 지키는 공용 규칙
-cp -r "$SDD_SRC"/.claude/skills/sdd-sync .claude/skills/        # finalizer의 spec 병합 절차
+# 에이전트와 지휘 스킬, 공용 규칙·sync 스킬 복사 (원본은 저장소의 agents/, skills/)
+mkdir -p .claude/agents .claude/skills
+cp "$SDD_SRC"/agents/*.md .claude/agents/
+cp -r "$SDD_SRC"/skills/orchestra .claude/skills/
+cp -r "$SDD_SRC"/skills/sdd-rules .claude/skills/       # 에이전트 7개가 함께 지키는 공용 규칙
+cp -r "$SDD_SRC"/skills/sdd-sync .claude/skills/        # finalizer의 spec 병합 절차
 cp "$SDD_SRC"/.claude/settings.json .claude/      # 권한 프롬프트를 줄인다. 이미 있으면 내용을 확인하고 옮겨라
 ```
 
@@ -100,12 +158,12 @@ cp "$SDD_SRC"/.claude/settings.json .claude/      # 권한 프롬프트를 줄�
 
 ### CLAUDE.md 는 복사하지 말고 **합쳐라**
 
-대상 프로젝트에 이미 `CLAUDE.md`가 있으면 덮어쓰면 안 된다. 이 저장소 `CLAUDE.md`의
+대상 프로젝트에 이미 `CLAUDE.md`가 있으면 덮어쓰면 안 된다. 이 저장소 `.claude/CLAUDE.md`의
 `<!-- init-SDD:begin -->` ~ `<!-- init-SDD:end -->` 구획만 뽑아 **끝에 덧붙인다.**
 (`install.sh` 를 쓰면 알아서 해준다)
 
 ```bash
-sed -n '/init-SDD:begin/,/init-SDD:end/p' "$SDD_SRC"/CLAUDE.md >> CLAUDE.md   # 방법 2와 같은 터미널에서
+sed -n '/init-SDD:begin/,/init-SDD:end/p' "$SDD_SRC"/.claude/CLAUDE.md >> CLAUDE.md   # 방법 2와 같은 터미널에서
 ```
 
 ### 이름이 겹칠 수 있는 파일
@@ -120,7 +178,6 @@ sed -n '/init-SDD:begin/,/init-SDD:end/p' "$SDD_SRC"/CLAUDE.md >> CLAUDE.md   # 
 - `CLAUDE.md` → 위 안내대로 **합친다**
 - `.claude/agents/{preparer,analyzer,designer,worker,reviewer,regression-verifier,finalizer}.md`
 - `.claude/skills/orchestra/`
-- `.claude/skills/agent-model-tier/`
 - `.claude/skills/sdd-rules/`
 - `.claude/skills/sdd-sync/`
 - `.claude/settings.json` → 이미 있으면 **덮어쓰지 말고 내용을 직접 확인해서 필요한 줄을
@@ -131,7 +188,7 @@ sed -n '/init-SDD:begin/,/init-SDD:end/p' "$SDD_SRC"/CLAUDE.md >> CLAUDE.md   # 
 
 ```bash
 ls .claude/agents | wc -l                              # 8
-ls .claude/skills/{orchestra,agent-model-tier,sdd-rules,sdd-sync}/SKILL.md   # 4개 모두 있어야 한다
+ls .claude/skills/{orchestra,sdd-rules,sdd-sync}/SKILL.md   # 3개 모두 있어야 한다
 openspec list                                          # 에러 없이 돌아야 한다
 ```
 
@@ -140,7 +197,8 @@ openspec list                                          # 에러 없이 돌아야
 
 **이미 설치한 프로젝트**라면 `install.sh`를 다시 돌려도 에이전트 파일은 건너뛰어진다. 두 스킬
 (`sdd-rules`, `sdd-sync`)은 새로 복사되니, 건너뛴 에이전트 파일을 이 저장소의 새 판과 비교해
-옮겨라. 새 판은 두 스킬을 주입받는다.
+옮겨라. 새 판은 두 스킬을 주입받는다. 예전에 깔린 모델 등급 스킬 디렉터리가 남아 있으면 더 쓰지 않으니
+지워도 된다.
 
 **Claude Code를 새 세션으로 다시 열어야** 새 에이전트와 스킬이 잡힌다.
 
@@ -170,7 +228,7 @@ context: |
 ```
 
 그냥 평소처럼 말하면 된다. 오케스트레이터가 크기를 재고 알맞은 경로로 보낸다.
-직접 파이프라인을 부르고 싶으면 `/orchestra` 를 쓴다.
+직접 파이프라인을 부르고 싶으면 `/sdd:orchestra` 를 쓴다(복사·링크 방식으로 깐 프로젝트는 `/orchestra`).
 
 사용자가 **반드시** 답해야 하는 지점은 세 곳이고, 상황에 따라 더 묻는다
 (진행 중 change가 2개 이상일 때, 에이전트가 질문을 올렸을 때, 두 번 고쳐도 안 될 때,
@@ -212,14 +270,13 @@ context: |
 | `regression-verifier` | 기존 동작이 깨졌는지 (읽기 전용, reviewer와 병렬). 큰 작업이고 테스트 명령이 있을 때만 | sonnet |
 | `finalizer` | 메인 spec 갱신(sync) → 커밋 | sonnet |
 
-모델은 각 에이전트 파일의 `model:` 한 줄로 바꿀 수 있고, `agent-model-tier` 스킬을 쓰면
-7개를 한 번에 갈 수 있다.
+모델은 각 에이전트 파일의 `model:` 한 줄이 기본값이다.
 
 ### 보조 에이전트: code-explorer
 
 위 7개 에이전트 외에 `code-explorer`라는 8번째 에이전트가 있다. 이 에이전트는 파이프라인 단계가
-아니라 7개 에이전트 각자가 코드베이스를 넓게 뒤져야 할 때 직접 부르는 읽기 전용 도구다. 
-`agent-model-tier` 스킬의 등급 전환 대상이 아니며, 항상 `haiku`로 고정된다.
+아니라 7개 에이전트 각자가 코드베이스를 넓게 뒤져야 할 때 직접 부르는 읽기 전용 도구다.
+파이프라인 7개 표 밖의 보조 에이전트이고, `model: haiku`로 고정된다.
 
 ## 만들어지는 파일
 
@@ -241,12 +298,22 @@ context: |
 
 ## 커스터마이즈
 
-- **모델 바꾸기** — `agent-model-tier` 스킬로 `1` / `2` / `4` 세 등급을
-  한 번에 갈 수 있다. 손으로 에이전트 파일 하나씩 `model:` 줄을 고쳐도 된다.
+- **모델 바꾸기** — 각 에이전트 파일의 `model:` 한 줄이 기본값이다. 바꾸려면 그 줄을 고친다.
 - **단계 늘리기** — `.claude/agents/` 에 파일 하나 추가하고 `orchestra` 스킬의 파이프라인에 배선
 - **프로젝트 규칙 주입** — `openspec/config.yaml` 의 `context:` 와 `rules:`.
   거기 적은 내용이 모든 산출물 작성에 제약으로 들어간다. 에이전트 파일을 고치는 것보다 이게 낫다
 - **스킬 추가** — 쓰면서 필요한 걸 `.claude/skills/` 에 늘려간다. 이 구조는 그걸 전제로 만들었다
+
+## 개발 (이 저장소를 고칠 때)
+
+저장소 루트가 플러그인 `sdd`의 루트다. 고칠 때는 저장소 루트에서 이렇게 띄운다.
+
+```bash
+claude --plugin-dir .
+```
+
+에이전트는 `agents/`, 스킬은 `skills/`가 원본이다. `--plugin-dir`이 같은 이름으로 설치된 플러그인보다 우선한다.
+이 저장소의 프로젝트 지침 파일은 `.claude/CLAUDE.md`다(루트는 플러그인 루트라 `CLAUDE.md`를 두지 않는다).
 
 ## 알아 둘 것
 
@@ -261,8 +328,7 @@ context: |
   메인 spec 파일 삭제는 사용자가 명시적으로 요청해야 한다.
 - **작은 작업 한 번은 서브에이전트 4번 호출이고, 큰 작업은 5~6번이다** (designer·reviewer가 opus).
   analyzer를 부르면 한 번 늘어난다(그때는 analyzer도 opus). 느리고 토큰을 많이 쓴다. 오타 수정에는 자동으로
-  경량 경로가 쓰인다. 비용이 부담되면 `agent-model-tier` 스킬로 등급을 내리거나, 해당
-  파일들의 `model:` 을 손으로 내려라.
+  경량 경로가 쓰인다. 비용이 부담되면 해당 에이전트 파일들의 `model:` 을 손으로 내려라.
 - **대화형 세션에서만 제대로 돈다.** 범위 밖 확인, 커밋 직전 확인 같은 필수 질문이 대화형
   질문이라 `claude -p` 같은 비대화형 실행에서는 그 관문들이 뜨지 않는다.
 - **기존 코드가 있는 프로젝트는 처음에 spec이 0개다. 그게 맞다.** change를 하나씩 돌리면서

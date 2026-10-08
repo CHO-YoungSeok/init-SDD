@@ -4,11 +4,10 @@
 지금은 뼈대만 있고 실제 작업 문장과 채점 조건은 비어 있다(`TODO`).
 확인한 Claude Code 버전은 2.1.294 이다. 버전이 바뀌면 `claude plugin eval init` 출력 모양이 달라질 수 있다.
 
-## 지금은 실행할 수 없다
+## 실행 위치
 
-`claude plugin eval` 은 `plugin.json` 이 있는 플러그인 루트에서만 돈다.
-이 저장소는 아직 플러그인이 아니다. 상위 change `plugin-lite-sdd-distribution` 의 ③ 단계(`convert-to-plugin`)로
-플러그인이 된 뒤에 실행할 수 있다.
+`claude plugin eval` 은 `plugin.json` 이 있는 플러그인 루트에서 돈다.
+이 저장소의 루트(`.claude-plugin/plugin.json` 이 있는 곳)가 플러그인 루트다. 저장소 루트에서 실행한다.
 
 ## 폴더 구조
 
@@ -33,23 +32,24 @@ evals/
 claude plugin eval init --bare <이름>
 ```
 
-플러그인이 되기 전에는 플러그인 폴더가 아니라고 거부하므로 `--eval-dir evals` 를 붙인다.
-손으로 흉내 내지 말고 이 명령이 만든 모양을 그대로 쓴다.
+플러그인 루트(저장소 루트)에서 돌린다. 손으로 흉내 내지 말고 이 명령이 만든 모양을 그대로 쓴다.
 
 ## 실행
 
 플러그인 루트에서 아래처럼 돌린다. 금액은 사용자가 정한다.
 
 ```
-claude plugin eval . --ablation with-without --runs 3 --max-cost-usd <금액> --json <json경로> --report <html경로>
+claude plugin eval . --ablation with-without --runs 3 --max-cost-usd <금액> --no-publish --json <json경로> --report <html경로>
 ```
+
+`--no-publish` 를 빼지 않는다. 기본값은 보고서를 claude.ai에 올린다.
 
 `--threshold` 는 임계값이라 쓰지 않는다. 임계값은 측정 뒤 사용자가 정한다.
 
 ## 실제 측정 전에 바꿀 것
 
 - `allowed_tools` 는 bare 기본값이라 Write, Edit, Bash 가 없다. 실제 작업 사례는 도구를 넓히고 `--allow-tools` 로 허용해야 한다.
-- 결과는 `evals/results/` 에 쌓인다. 이 폴더는 지금 없어야 하고, 무시 규칙은 ③ 에서 정한다.
+- 결과는 `evals/results/` 에 쌓이고 `.gitignore` 가 무시한다. 커밋하지 않는다.
 
 ## 기록
 
