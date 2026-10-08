@@ -18,6 +18,7 @@ fail() { printf '오류: %s\n' "$*" >&2; exit 1; }
 [[ "$SRC" == "$DST" ]] && fail "init-SDD 저장소 안에서 실행했다. 설치할 프로젝트로 이동해서 실행해라."
 
 say "init-SDD 설치"
+say "  권장 설치는 플러그인이다 — $SRC/README.md 의 '설치' 절. 이 스크립트는 기존 방식으로 남아 있다."
 say "  원본: $SRC"
 say "  대상: $DST"
 [[ $DRY -eq 1 ]] && say "  (--dry-run: 아무것도 바꾸지 않는다)"
@@ -58,10 +59,12 @@ fi
 say ""
 say "3. 에이전트와 지휘 스킬 복사"
 SKIPPED=()
+SKIPPED_SRC=()
 copy_if_absent() {  # $1=원본 상대경로  $2=대상 상대경로
   local s="$SRC/$1" d="$DST/$2"
   if [[ -e "$d" ]]; then
     SKIPPED+=("$2")
+    SKIPPED_SRC+=("$1")
     say "   [있음, 건너뜀] $2"
   else
     run "mkdir -p \"\$(dirname \"$d\")\""
@@ -71,28 +74,27 @@ copy_if_absent() {  # $1=원본 상대경로  $2=대상 상대경로
 }
 
 for agent in preparer analyzer designer worker reviewer regression-verifier finalizer code-explorer; do
-  copy_if_absent ".claude/agents/$agent.md" ".claude/agents/$agent.md"
+  copy_if_absent "agents/$agent.md" ".claude/agents/$agent.md"
 done
-copy_if_absent ".claude/skills/orchestra" ".claude/skills/orchestra"
-copy_if_absent ".claude/skills/agent-model-tier" ".claude/skills/agent-model-tier"
-copy_if_absent ".claude/skills/sdd-rules" ".claude/skills/sdd-rules"
-copy_if_absent ".claude/skills/sdd-sync" ".claude/skills/sdd-sync"
+copy_if_absent "skills/orchestra" ".claude/skills/orchestra"
+copy_if_absent "skills/sdd-rules" ".claude/skills/sdd-rules"
+copy_if_absent "skills/sdd-sync" ".claude/skills/sdd-sync"
 copy_if_absent ".claude/settings.json" ".claude/settings.json"
 
 # --- 4. CLAUDE.md 는 합친다 ---
 say ""
 say "4. CLAUDE.md"
-# 조각 원본은 이 저장소 CLAUDE.md 의 마커 구획 한 곳뿐이다. 여기에 문구를 베껴 두지 않는다.
+# 조각 원본은 이 저장소 .claude/CLAUDE.md 의 마커 구획 한 곳뿐이다. 여기에 문구를 베껴 두지 않는다.
 MARK_BEGIN='<!-- init-SDD:begin -->'
 MARK_END='<!-- init-SDD:end -->'
-EXTRACT_CMD="sed -n '/init-SDD:begin/,/init-SDD:end/p' \"$SRC/CLAUDE.md\""
+EXTRACT_CMD="sed -n '/init-SDD:begin/,/init-SDD:end/p' \"$SRC/.claude/CLAUDE.md\""
 # 예전 방식(마커가 없던 때)으로 깔았는지 짐작하는 데만 쓰는 낱말. 한 곳에만 적는다.
 OLD_WORD='오케스트레이터'
 
-[[ -f "$SRC/CLAUDE.md" ]] || fail "원본이 없다: $SRC/CLAUDE.md . init-SDD 저장소를 통째로 받았는지 확인해라."
-SNIPPET="$(sed -n "/$MARK_BEGIN/,/$MARK_END/p" "$SRC/CLAUDE.md")"
+[[ -f "$SRC/.claude/CLAUDE.md" ]] || fail "원본이 없다: $SRC/.claude/CLAUDE.md . init-SDD 저장소를 통째로 받았는지 확인해라."
+SNIPPET="$(sed -n "/$MARK_BEGIN/,/$MARK_END/p" "$SRC/.claude/CLAUDE.md")"
 # 빈 값을 붙이면 "성공"이라 말하면서 아무 지시문도 안 들어간다. 그러면 멈춘다.
-[[ -n "$SNIPPET" ]] || fail "CLAUDE.md 에서 init-SDD 구획을 뽑지 못했다. $SRC/CLAUDE.md 의 마커($MARK_BEGIN ~ $MARK_END)를 확인해라."
+[[ -n "$SNIPPET" ]] || fail "CLAUDE.md 에서 init-SDD 구획을 뽑지 못했다. $SRC/.claude/CLAUDE.md 의 마커($MARK_BEGIN ~ $MARK_END)를 확인해라."
 
 # 판별은 마커로 한다. 낱말은 사람이 쓰는 말이라 지문으로 약하다.
 if [[ ! -f "$DST/CLAUDE.md" ]]; then
@@ -120,9 +122,9 @@ if [[ $DRY -eq 1 ]]; then say "   (--dry-run: 확인은 건너뛴다)"; fi
 if [[ $DRY -eq 0 ]]; then
   N_AGENTS=$(ls "$DST/.claude/agents"/*.md 2>/dev/null | wc -l | tr -d ' ')
   say "   에이전트: ${N_AGENTS}개 (8이어야 한다)"
-  # 우리 스킬 4개 (지휘 + 모델 등급 + 공용 규칙 + sync 절차). 하나라도 없으면 제품이 덜 깔린 것이다.
+  # 우리 스킬 3개 (지휘 + 공용 규칙 + sync 절차). 하나라도 없으면 제품이 덜 깔린 것이다.
   OURS_MISSING=()
-  for ours in orchestra agent-model-tier sdd-rules sdd-sync; do
+  for ours in orchestra sdd-rules sdd-sync; do
     if [[ -f "$DST/.claude/skills/$ours/SKILL.md" ]]; then
       say "   $ours 스킬: ok"
     else
@@ -132,7 +134,7 @@ if [[ $DRY -eq 0 ]]; then
   if [[ ${#OURS_MISSING[@]} -gt 0 ]]; then
     say "   경고: init-SDD 스킬이 빠졌다: ${OURS_MISSING[*]}"
     for ours in "${OURS_MISSING[@]}"; do
-      say "     원본: $SRC/.claude/skills/$ours"
+      say "     원본: $SRC/skills/$ours"
     done
   fi
   openspec list >/dev/null 2>&1 && say "   openspec 동작: ok" || say "   경고: openspec list 가 실패했다."
@@ -144,7 +146,11 @@ say "설치 끝."
 if [[ ${#SKIPPED[@]} -gt 0 ]]; then
   say ""
   say "이미 있어서 건너뛴 파일이 있다. 필요하면 직접 비교해서 합쳐라:"
-  for p in "${SKIPPED[@]}"; do say "  - $p   (원본: $SRC/$p)"; done
+  for i in "${!SKIPPED[@]}"; do say "  - ${SKIPPED[$i]}   (원본: $SRC/${SKIPPED_SRC[$i]})"; done
+fi
+if [[ -d "$DST/.claude/skills/agent-model-tier" ]]; then
+  say ""
+  say "옛 판이 깐 .claude/skills/agent-model-tier/ 가 남아 있다. 더 이상 쓰지 않으니 지워도 된다 (이 스크립트는 지우지 않는다)."
 fi
 say ""
 say "다음 할 일:"
@@ -158,6 +164,8 @@ say "  3. Claude Code를 새 세션으로 다시 열어라 (새 에이전트·�
 say "  4. 개인 설정을 공유 저장소에 남기고 싶지 않으면 링크 방식(init-sdd 스킬)도 있다 — 고르는 안내는 $SRC/README.md 의 '먼저 고른다' 절에 있다."
 say "  5. 이미 깔았던 프로젝트면 위 [있음, 건너뜀]으로 남은 에이전트 파일을 새 판과 비교해 옮겨라"
 say "     (새 판은 sdd-rules·sdd-sync 스킬을 주입받는다)."
+say "  6. 플러그인으로 옮기려면: 복사된 .claude/agents 와 .claude/skills/{orchestra,sdd-rules,sdd-sync} 를 지우고 플러그인을 설치해라 ($SRC/README.md)."
+say "     플러그인과 이 복사본을 함께 두면 같은 에이전트가 두 이름(sdd:<이름>, <이름>)으로 실린다."
 say ""
 say "그 다음 그냥 할 일을 말하면 된다. 예: \"로그인 기능 추가해줘\""
 say "파이프라인을 직접 부르려면: /orchestra <할 일>"

@@ -2,6 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(openspec:*)",
+      "Bash(sdd-openspec:*)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",
