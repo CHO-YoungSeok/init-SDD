@@ -17,7 +17,7 @@
 
 ## 4. ③ convert-to-plugin
 
-- [ ] 4.1 하위 change `convert-to-plugin` 완료: 설치 두 줄 + `/sdd-init` 한 번으로 시작하는 실측 절차가 문서에 있고(조건 1), `sdd-openspec --version` 이 1.14.1을 출력하며(조건 2), 권한 목록 안내·동의 시 `settings.local.json` 기록과 SessionStart 훅이 있고(조건 8), agent-model-tier 스킬·spec이 삭제됐고, 메인 spec `.claude/` 경로가 decision.md "핵심 결정 4" 규칙대로 처리됐으며, `bash -n install.sh` 통과, validate --strict exit=0, 해당 change archive 완료 (archive 폴더 존재로 확인)
+- [x] 4.1 하위 change `convert-to-plugin` 완료: 설치 두 줄 + `/sdd-init` 한 번으로 시작하는 실측 절차가 문서에 있고(조건 1), `sdd-openspec --version` 이 1.14.1을 출력하며(조건 2), 권한 목록 안내·동의 시 `settings.local.json` 기록과 SessionStart 훅이 있고(조건 8), agent-model-tier 스킬·spec이 삭제됐고, 메인 spec `.claude/` 경로가 decision.md "핵심 결정 4" 규칙대로 처리됐으며, `bash -n install.sh` 통과, validate --strict exit=0, 해당 change archive 완료 (archive 폴더 존재로 확인)
 
 ## 5. 상위 change 마무리
 
