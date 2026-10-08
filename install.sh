@@ -75,6 +75,8 @@ for agent in preparer analyzer designer worker reviewer regression-verifier fina
 done
 copy_if_absent ".claude/skills/orchestra" ".claude/skills/orchestra"
 copy_if_absent ".claude/skills/agent-model-tier" ".claude/skills/agent-model-tier"
+copy_if_absent ".claude/skills/sdd-rules" ".claude/skills/sdd-rules"
+copy_if_absent ".claude/skills/sdd-sync" ".claude/skills/sdd-sync"
 copy_if_absent ".claude/settings.json" ".claude/settings.json"
 
 # --- 4. CLAUDE.md 는 합친다 ---
@@ -118,9 +120,9 @@ if [[ $DRY -eq 1 ]]; then say "   (--dry-run: 확인은 건너뛴다)"; fi
 if [[ $DRY -eq 0 ]]; then
   N_AGENTS=$(ls "$DST/.claude/agents"/*.md 2>/dev/null | wc -l | tr -d ' ')
   say "   에이전트: ${N_AGENTS}개 (8이어야 한다)"
-  # 우리 스킬 2개 (지휘 + 모델 등급). 하나라도 없으면 제품이 덜 깔린 것이다.
+  # 우리 스킬 4개 (지휘 + 모델 등급 + 공용 규칙 + sync 절차). 하나라도 없으면 제품이 덜 깔린 것이다.
   OURS_MISSING=()
-  for ours in orchestra agent-model-tier; do
+  for ours in orchestra agent-model-tier sdd-rules sdd-sync; do
     if [[ -f "$DST/.claude/skills/$ours/SKILL.md" ]]; then
       say "   $ours 스킬: ok"
     else
@@ -132,19 +134,6 @@ if [[ $DRY -eq 0 ]]; then
     for ours in "${OURS_MISSING[@]}"; do
       say "     원본: $SRC/.claude/skills/$ours"
     done
-  fi
-  MISSING=()
-  for sk in explore propose update-change apply-change sync-specs archive-change; do
-    [[ -f "$DST/.claude/skills/openspec-$sk/SKILL.md" ]] || MISSING+=("openspec-$sk")
-  done
-  if [[ ${#MISSING[@]} -gt 0 ]]; then
-    say "   경고: OpenSpec 스킬이 빠졌다: ${MISSING[*]}"
-    say "     전역 설정 때문일 수 있다. 아래를 실행해라:"
-    say "       openspec config set delivery both"
-    say "       openspec config set profile core"
-    say "       openspec update --force"
-  else
-    say "   OpenSpec 스킬 6개: ok"
   fi
   openspec list >/dev/null 2>&1 && say "   openspec 동작: ok" || say "   경고: openspec list 가 실패했다."
 fi
@@ -167,6 +156,8 @@ say "     적은 뒤 'openspec context' 로 Warning 이 없는지 확인해라."
 say "  2. .gitignore 에 .claude/settings.local.json 한 줄을 더해라 (개인 설정)."
 say "  3. Claude Code를 새 세션으로 다시 열어라 (새 에이전트·스킬이 잡힌다)."
 say "  4. 개인 설정을 공유 저장소에 남기고 싶지 않으면 링크 방식(init-sdd 스킬)도 있다 — 고르는 안내는 $SRC/README.md 의 '먼저 고른다' 절에 있다."
+say "  5. 이미 깔았던 프로젝트면 위 [있음, 건너뜀]으로 남은 에이전트 파일을 새 판과 비교해 옮겨라"
+say "     (새 판은 sdd-rules·sdd-sync 스킬을 주입받는다)."
 say ""
 say "그 다음 그냥 할 일을 말하면 된다. 예: \"로그인 기능 추가해줘\""
 say "파이프라인을 직접 부르려면: /orchestra <할 일>"

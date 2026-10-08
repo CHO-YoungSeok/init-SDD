@@ -1,6 +1,6 @@
 ---
 name: init-sdd
-description: 개인 agentic 설정(서브에이전트 7개, orchestra·agent-model-tier 스킬, 권한 설정)을 별도의 개인 git 저장소에 두고, 공유 프로젝트의 `.claude/` 안에서는 그것을 심볼릭 링크로 가리키게 해 준다. "개인 설정을 별도 저장소로 분리해줘", "링크 방식으로 SDD 깔아줘", "링크로 연결해줘", "연결 풀어줘", "원래대로 되돌려줘", "지금 연결돼 있어?", "링크 상태 봐줘" 같은 말에 쓴다.
+description: 개인 agentic 설정(서브에이전트 7개, orchestra·agent-model-tier·sdd-rules·sdd-sync 스킬, 권한 설정)을 별도의 개인 git 저장소에 두고, 공유 프로젝트의 `.claude/` 안에서는 그것을 심볼릭 링크로 가리키게 해 준다. "개인 설정을 별도 저장소로 분리해줘", "링크 방식으로 SDD 깔아줘", "링크로 연결해줘", "연결 풀어줘", "원래대로 되돌려줘", "지금 연결돼 있어?", "링크 상태 봐줘" 같은 말에 쓴다.
 ---
 
 # 링크 방식으로 SDD 얹기 (init-sdd)
@@ -72,13 +72,15 @@ done
 
 **`.claude/`를 통째로 링크하지 마라.** 그 안에는 소유자가 다른 것이 섞여 있다.
 
-### 링크하는 것 (개인 소유) — 정확히 네 개
+### 링크하는 것 (개인 소유) — 정확히 여섯 개
 
 | 대상 프로젝트의 자리 | 가리킬 곳 | 종류 |
 |---|---|---|
 | `<대상>/.claude/agents` | `<개인>/<프로젝트>/agents` | 디렉터리 |
 | `<대상>/.claude/skills/orchestra` | `<개인>/<프로젝트>/skills/orchestra` | 디렉터리 |
 | `<대상>/.claude/skills/agent-model-tier` | `<개인>/<프로젝트>/skills/agent-model-tier` | 디렉터리 |
+| `<대상>/.claude/skills/sdd-rules` | `<개인>/<프로젝트>/skills/sdd-rules` | 디렉터리 |
+| `<대상>/.claude/skills/sdd-sync` | `<개인>/<프로젝트>/skills/sdd-sync` | 디렉터리 |
 | `<대상>/.claude/settings.json` | `<개인>/<프로젝트>/settings.json` | 파일 |
 
 링크는 **절대 경로로** 만든다. 상대 경로 링크는 대상 프로젝트가 옮겨지면 끊기지만, 절대
@@ -93,7 +95,7 @@ done
 | `.claude/settings.local.json` | 개인 로컬 설정이고 이미 추적 제외 대상이다. **만들지도 고치지도 지우지도 않는다** |
 
 `.claude/skills/` **자체는 실제 디렉터리로 남긴다.** 그것까지 링크하면 `openspec-*` 6개가
-개인 저장소로 끌려간다. `skills/` 안의 두 개만 링크한다. 같은 이유로 `.claude/` 통째 링크는
+개인 저장소로 끌려간다. `skills/` 안의 네 개만 링크한다. 같은 이유로 `.claude/` 통째 링크는
 금지다.
 
 ---
@@ -149,10 +151,12 @@ mkdir -p "$개인/$프로젝트/skills"
 cp -R "$SRC/.claude/agents"                  "$개인/$프로젝트/agents"
 cp -R "$SRC/.claude/skills/orchestra"        "$개인/$프로젝트/skills/orchestra"
 cp -R "$SRC/.claude/skills/agent-model-tier" "$개인/$프로젝트/skills/agent-model-tier"
+cp -R "$SRC/.claude/skills/sdd-rules"        "$개인/$프로젝트/skills/sdd-rules"
+cp -R "$SRC/.claude/skills/sdd-sync"         "$개인/$프로젝트/skills/sdd-sync"
 cp    "$SRC/.claude/settings.json"           "$개인/$프로젝트/settings.json"
 ```
 
-### 3단계 — 자리가 비어 있는지 본다 (링크를 만들기 **전에** 네 자리 모두)
+### 3단계 — 자리가 비어 있는지 본다 (링크를 만들기 **전에** 여섯 자리 모두)
 
 판정할 때 `-e`와 `-L`을 **함께** 본다. **끊긴 링크는 `-e`가 거짓이다.** `-L`을 안 보면
 끊긴 링크가 "없다"로 판정되어 그 위에 링크를 만들려다 실패한다.
@@ -176,7 +180,7 @@ cp    "$SRC/.claude/settings.json"           "$개인/$프로젝트/settings.jso
 
 ### 4단계 — 링크를 만든다
 
-네 자리 모두 3단계를 통과한 뒤에만 만든다.
+여섯 자리 모두 3단계를 통과한 뒤에만 만든다.
 
 ```bash
 P="$개인/$프로젝트"
@@ -184,6 +188,8 @@ mkdir -p "$대상/.claude/skills"          # skills/ 는 실제 디렉터리로 
 ln -s "$P/agents"                  "$대상/.claude/agents"
 ln -s "$P/skills/orchestra"        "$대상/.claude/skills/orchestra"
 ln -s "$P/skills/agent-model-tier" "$대상/.claude/skills/agent-model-tier"
+ln -s "$P/skills/sdd-rules"        "$대상/.claude/skills/sdd-rules"
+ln -s "$P/skills/sdd-sync"         "$대상/.claude/skills/sdd-sync"
 ln -s "$P/settings.json"           "$대상/.claude/settings.json"
 ```
 
@@ -209,6 +215,8 @@ cat >> "$대상/.git/info/exclude" <<'EOF'
 .claude/agents
 .claude/skills/orchestra
 .claude/skills/agent-model-tier
+.claude/skills/sdd-rules
+.claude/skills/sdd-sync
 .claude/settings.json
 CLAUDE.md
 EOF
@@ -320,10 +328,10 @@ git -C "$대상" update-index --skip-worktree CLAUDE.md
 
 걸었던 것을 전부 되돌린다. **네 가지를 다 해야** 공유 저장소가 절차 전과 같아진다.
 
-### 1) 링크 네 개를 없앤다 — 링크만 없앤다
+### 1) 링크 여섯 개를 없앤다 — 링크만 없앤다
 
 ```bash
-for p in .claude/agents .claude/skills/orchestra .claude/skills/agent-model-tier .claude/settings.json; do
+for p in .claude/agents .claude/skills/orchestra .claude/skills/agent-model-tier .claude/skills/sdd-rules .claude/skills/sdd-sync .claude/settings.json; do
   if [[ -L "$대상/$p" ]]; then rm "$대상/$p"; echo "링크 제거: $p"; fi
 done
 ```
@@ -387,10 +395,10 @@ git -C "$대상" diff --exit-code       # 추적 파일 내용이 원래와 같�
 
 지금 이 프로젝트가 링크 방식으로 걸려 있는지 보여준다. 네 가지를 다 본다.
 
-### 1) 링크 자리 네 개 — 네 갈래로 구분한다
+### 1) 링크 자리 여섯 개 — 네 갈래로 구분한다
 
 ```bash
-for p in .claude/agents .claude/skills/orchestra .claude/skills/agent-model-tier .claude/settings.json; do
+for p in .claude/agents .claude/skills/orchestra .claude/skills/agent-model-tier .claude/skills/sdd-rules .claude/skills/sdd-sync .claude/settings.json; do
   f="$대상/$p"
   if   [[ -L "$f" && -e "$f" ]]; then echo "$p : 링크됨 -> $(readlink "$f")"
   elif [[ -L "$f" ]];            then echo "$p : ★ 끊긴 링크 -> $(readlink "$f") (가리키는 곳이 없다)"
@@ -448,7 +456,7 @@ git -C "$대상" status --porcelain
 
 | `.claude/` 안에 추적되는 파일이 | `git status --porcelain`에 보이는 것 |
 |---|---|
-| **있다** (`openspec init`을 이미 돌린 프로젝트는 항상 이쪽) | 링크가 **항목별로 한 줄씩** 뜬다: `?? .claude/agents`, `?? .claude/settings.json` 등 네 줄 |
+| **있다** (`openspec init`을 이미 돌린 프로젝트는 항상 이쪽) | 링크가 **항목별로 한 줄씩** 뜬다: `?? .claude/agents`, `?? .claude/settings.json` 등 여섯 줄 |
 | **없다** (`.claude/` 전체가 미추적) | `?? .claude/` **한 줄로 접힌다** |
 
 `?? .claude/` 한 줄만 찾으면 실제 프로젝트에서는 놓친다. **`.claude/`로 시작하는 줄이
@@ -476,7 +484,7 @@ git -C "$대상" status --porcelain
 1. 대상 프로젝트에서 Claude Code를 **새 세션으로** 다시 연다 (설정을 읽는 시점이 세션 시작이다).
 2. 서브에이전트가 잡히는지 본다: 에이전트 목록에 7개(`preparer`, `analyzer`, `designer`,
    `worker`, `reviewer`, `regression-verifier`, `finalizer`)가 보이는지.
-3. 스킬이 잡히는지 본다: 스킬 목록에 `orchestra`와 `agent-model-tier`가 보이는지.
+3. 스킬이 잡히는지 본다: 스킬 목록에 `orchestra`, `agent-model-tier`, `sdd-rules`, `sdd-sync`가 보이는지.
 4. 실제로 한 번 불러 본다: `/orchestra` 를 쳐 보고 응답이 오는지.
 
 ### 안 잡혔을 때 — 복사로 떨어진다
@@ -487,7 +495,7 @@ git -C "$대상" status --porcelain
 
 ```bash
 # 1) 링크를 푼다 (위 "풀기"의 1)번만)
-for p in .claude/agents .claude/skills/orchestra .claude/skills/agent-model-tier .claude/settings.json; do
+for p in .claude/agents .claude/skills/orchestra .claude/skills/agent-model-tier .claude/skills/sdd-rules .claude/skills/sdd-sync .claude/settings.json; do
   [[ -L "$대상/$p" ]] && rm "$대상/$p"
 done
 
@@ -497,6 +505,8 @@ mkdir -p "$대상/.claude/skills"
 cp -R "$P/agents"                  "$대상/.claude/agents"
 cp -R "$P/skills/orchestra"        "$대상/.claude/skills/orchestra"
 cp -R "$P/skills/agent-model-tier" "$대상/.claude/skills/agent-model-tier"
+cp -R "$P/skills/sdd-rules"        "$대상/.claude/skills/sdd-rules"
+cp -R "$P/skills/sdd-sync"         "$대상/.claude/skills/sdd-sync"
 cp    "$P/settings.json"           "$대상/.claude/settings.json"
 
 # 3) 복사된 경로도 .git/info/exclude 에 적는다 (경로가 같으므로 "걸기" 5단계와 같은 줄이다)
