@@ -1,0 +1,242 @@
+#!/usr/bin/env bash
+# sdd 플러그인 초기화 실행 파일 — /sdd:init 스킬이 부른다.
+# 판단이 필요 없는 단계만 여기 둔다. 사용자 확인은 스킬 문서가 맡는다.
+# 대상은 현재 디렉터리다. JSON은 node 로 읽고 쓴다(node 는 sdd-openspec 때문에 어차피 필요하다).
+
+PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SDD_OPENSPEC="$PLUGIN_ROOT/bin/sdd-openspec"
+MARKER="openspec/.sdd"
+CONFIG="openspec/config.yaml"
+LOCAL_SETTINGS=".claude/settings.local.json"
+
+usage() {
+  cat >&2 <<'EOF'
+사용법: sdd-init <하위 명령>
+
+  setup              git 저장소를 확인하고 openspec/ 를 최소로 초기화한 뒤 훅 표식 openspec/.sdd 를 만든다 (여러 번 돌려도 같다)
+  detect             스택·테스트·빌드·기본 브랜치를 감지해 context 초안을 출력한다 (파일을 바꾸지 않는다)
+  write-context      context 초안을 openspec/config.yaml 끝에 덧붙인다 (사용자 동의 뒤에만. 이미 context: 가 있으면 rc=2)
+  permissions        추가할 권한 목록을 출력한다 (파일을 바꾸지 않는다)
+  write-permissions  권한 목록 중 빠진 것만 .claude/settings.local.json 에 더한다 (사용자 동의 뒤에만)
+EOF
+}
+
+# 훅 표식 내용 (훅은 내용을 보지 않고 파일이 있는지만 본다)
+write_marker() {
+  cat > "$MARKER" <<'EOF'
+# sdd 플러그인 표식 — 이 파일이 있으면 sdd 플러그인의 SessionStart 훅이 지휘 규칙과 점검 결과를 넣는다.
+# 이 프로젝트에서 끄려면 이 파일을 지운다. /sdd:init 이 만든다. 커밋하면 플러그인을 깐 팀원에게도 켜진다.
+EOF
+}
+
+cmd_setup() {
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "git 저장소가 아니다. 먼저 git init 을 하고 커밋을 하나 만든 뒤 다시 돌려라." >&2
+    return 1
+  fi
+  if ! git rev-parse --verify --quiet HEAD >/dev/null 2>&1; then
+    echo "커밋이 하나도 없다. 커밋을 하나 만든 뒤 다시 돌려라 (예: git commit --allow-empty -m init)." >&2
+    return 1
+  fi
+
+  if [ -f "$CONFIG" ]; then
+    echo "openspec 초기화: 건너뜀 ($CONFIG 가 이미 있다)"
+  else
+    echo "참고: sdd-openspec 은 첫 실행 때 npm 레지스트리에서 @fission-ai/openspec@$(wrapper_version) 을 받는다."
+    echo "openspec 초기화: $SDD_OPENSPEC init --tools none --no-animation"
+    if ! "$SDD_OPENSPEC" init --tools none --no-animation; then
+      echo "openspec 초기화가 실패했다. 위 출력을 확인해라." >&2
+      return 1
+    fi
+    if [ ! -f "$CONFIG" ]; then
+      echo "openspec 초기화 뒤에도 $CONFIG 가 없다." >&2
+      return 1
+    fi
+  fi
+
+  if [ -f "$MARKER" ]; then
+    echo "훅 표식: 표식 있음 ($MARKER)"
+  else
+    mkdir -p openspec || return 1
+    write_marker || return 1
+    echo "훅 표식: 만듦 ($MARKER) — 이 표식이 SessionStart 훅을 켠다. 커밋하면 팀원에게도 켜지고, 지우면 꺼진다."
+  fi
+  return 0
+}
+
+# package.json 의 scripts.<이름> 이 있으면 0
+has_npm_script() {
+  node -e '
+    const fs = require("fs");
+    try {
+      const p = JSON.parse(fs.readFileSync("package.json", "utf8"));
+      process.exit(p && p.scripts && typeof p.scripts[process.argv[1]] === "string" ? 0 : 1);
+    } catch (e) { process.exit(1); }
+  ' "$1" 2>/dev/null
+}
+
+cmd_detect() {
+  local stack="" test_cmd="" build_cmd="" pm=""
+
+  if [ -f package.json ]; then
+    if [ -f pnpm-lock.yaml ]; then pm="pnpm"
+    elif [ -f yarn.lock ]; then pm="yarn"
+    else pm="npm"
+    fi
+    stack="Node.js ($pm)"
+    has_npm_script test && test_cmd="$pm test"
+    has_npm_script build && build_cmd="$pm run build"
+  fi
+
+  if [ -z "$stack" ] && { [ -f pyproject.toml ] || [ -f requirements.txt ]; }; then
+    stack="Python"
+    if [ -d tests ] || { [ -f pyproject.toml ] && grep -q 'pytest' pyproject.toml; }; then
+      test_cmd="pytest"
+    fi
+  fi
+
+  if [ -z "$stack" ] && [ -f go.mod ]; then
+    stack="Go"; test_cmd="go test ./..."; build_cmd="go build ./..."
+  fi
+
+  if [ -z "$stack" ] && [ -f Cargo.toml ]; then
+    stack="Rust (cargo)"; test_cmd="cargo test"; build_cmd="cargo build"
+  fi
+
+  if [ -z "$stack" ] && [ -f pom.xml ]; then
+    stack="Java (Maven)"; test_cmd="mvn test"; build_cmd="mvn package"
+  fi
+
+  if [ -z "$stack" ] && ls build.gradle* >/dev/null 2>&1; then
+    stack="Java/Kotlin (Gradle)"; test_cmd="./gradlew test"; build_cmd="./gradlew build"
+  fi
+
+  if [ -f Makefile ]; then
+    [ -z "$test_cmd" ] && grep -qE '^test:' Makefile && test_cmd="make test"
+    [ -z "$build_cmd" ] && grep -qE '^build:' Makefile && build_cmd="make build"
+  fi
+
+  # 기본 브랜치: origin/HEAD → 로컬 main → 로컬 master → 현재 브랜치
+  local branch="" how=""
+  branch="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)"
+  if [ -n "$branch" ]; then
+    branch="${branch#origin/}"; how="origin/HEAD 가 가리키는 브랜치"
+  elif git show-ref --verify --quiet refs/heads/main 2>/dev/null; then
+    branch="main"; how="로컬 main 브랜치"
+  elif git show-ref --verify --quiet refs/heads/master 2>/dev/null; then
+    branch="master"; how="로컬 master 브랜치"
+  else
+    branch="$(git branch --show-current 2>/dev/null)"; how="현재 브랜치"
+  fi
+  if [ -z "$branch" ]; then
+    branch="확인 필요"; how="감지 못 함"
+  fi
+
+  cat <<EOF
+context: |
+  기술 스택: ${stack:-확인 필요}
+  테스트 명령: ${test_cmd:-확인 필요}
+  빌드 명령: ${build_cmd:-확인 필요}
+  기본 브랜치: ${branch} (${how})
+EOF
+  return 0
+}
+
+cmd_write_context() {
+  if [ ! -f "$CONFIG" ]; then
+    echo "$CONFIG 가 없다. 먼저 sdd-init setup 을 돌려라." >&2
+    return 1
+  fi
+  if grep -q '^context:' "$CONFIG"; then
+    echo "$CONFIG 에 이미 최상위 context: 가 있다. 쓰지 않았다. 기존 값과 비교해 직접 고른다." >&2
+    return 2
+  fi
+  local draft
+  draft="$(cmd_detect)" || return 1
+  # 파일 끝에 줄바꿈이 없으면 먼저 붙이고, 빈 줄 하나를 둔 뒤 초안을 덧붙인다.
+  if [ -s "$CONFIG" ] && [ -n "$(tail -c 1 "$CONFIG")" ]; then
+    printf '\n' >> "$CONFIG" || return 1
+  fi
+  printf '\n%s\n' "$draft" >> "$CONFIG" || return 1
+  echo "$CONFIG 끝에 context 초안을 덧붙였다."
+  return 0
+}
+
+# 플러그인 루트 .claude/settings.json 의 permissions.allow 를 한 줄씩 출력한다.
+list_permissions() {
+  node -e '
+    const fs = require("fs");
+    const src = process.argv[1];
+    let j;
+    try { j = JSON.parse(fs.readFileSync(src, "utf8")); }
+    catch (e) { console.error("권한 목록 원본을 읽지 못했다: " + src); process.exit(1); }
+    const allow = (j && j.permissions && Array.isArray(j.permissions.allow)) ? j.permissions.allow : null;
+    if (!allow) { console.error("권한 목록 원본에 permissions.allow 배열이 없다: " + src); process.exit(1); }
+    for (const a of allow) console.log(a);
+  ' "$PLUGIN_ROOT/.claude/settings.json"
+}
+
+wrapper_version() {
+  sed -n 's/^OPENSPEC_VERSION="\(.*\)"$/\1/p' "$SDD_OPENSPEC" | head -n 1
+}
+
+cmd_permissions() {
+  list_permissions || return 1
+  echo "참고: sdd-openspec 은 첫 실행 때 npm 레지스트리에서 @fission-ai/openspec@$(wrapper_version) 을 받는다."
+  git check-ignore -q "$LOCAL_SETTINGS" 2>/dev/null
+  case $? in
+    0) echo "$LOCAL_SETTINGS 는 git 이 무시한다 (커밋되지 않는다)." ;;
+    1) echo "주의: $LOCAL_SETTINGS 는 git 이 무시하지 않는다. 커밋되지 않게 하려면 .gitignore 에 직접 더해라 (이 명령은 .gitignore 를 고치지 않는다)." ;;
+    *) echo "주의: $LOCAL_SETTINGS 가 git 에서 무시되는지 확인하지 못했다 (git 저장소가 아닐 수 있다)." ;;
+  esac
+  return 0
+}
+
+cmd_write_permissions() {
+  local list
+  list="$(list_permissions)" || return 1
+  mkdir -p .claude || return 1
+  SDD_PERMS="$list" node -e '
+    const fs = require("fs");
+    const path = process.argv[1];
+    const wanted = process.env.SDD_PERMS.split("\n").filter(Boolean);
+    let obj = {};
+    if (fs.existsSync(path)) {
+      try { obj = JSON.parse(fs.readFileSync(path, "utf8")); }
+      catch (e) { console.error(path + " 를 JSON 으로 읽지 못했다. 쓰지 않았다."); process.exit(1); }
+      if (obj === null || typeof obj !== "object" || Array.isArray(obj)) {
+        console.error(path + " 의 최상위가 객체가 아니다. 쓰지 않았다."); process.exit(1);
+      }
+    }
+    if (obj.permissions === undefined) obj.permissions = {};
+    if (obj.permissions === null || typeof obj.permissions !== "object" || Array.isArray(obj.permissions)) {
+      console.error(path + " 의 permissions 가 객체가 아니다. 쓰지 않았다."); process.exit(1);
+    }
+    if (obj.permissions.allow === undefined) obj.permissions.allow = [];
+    if (!Array.isArray(obj.permissions.allow)) {
+      console.error(path + " 의 permissions.allow 가 배열이 아니다. 쓰지 않았다."); process.exit(1);
+    }
+    const added = [];
+    for (const w of wanted) {
+      if (!obj.permissions.allow.includes(w)) { obj.permissions.allow.push(w); added.push(w); }
+    }
+    if (added.length === 0 && fs.existsSync(path)) {
+      console.log(path + ": 더할 항목이 없다 (이미 모두 있다).");
+      process.exit(0);
+    }
+    fs.writeFileSync(path, JSON.stringify(obj, null, 2) + "\n");
+    console.log(path + ": " + added.length + "개 항목을 더했다.");
+    for (const a of added) console.log("  + " + a);
+  ' "$LOCAL_SETTINGS"
+}
+
+case "${1:-}" in
+  setup) cmd_setup ;;
+  detect) cmd_detect ;;
+  write-context) cmd_write_context ;;
+  permissions) cmd_permissions ;;
+  write-permissions) cmd_write_permissions ;;
+  -h|--help|help) usage; exit 0 ;;
+  *) usage; exit 2 ;;
+esac
+exit $?

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# SDD 플러그인 openspec 래퍼 — 사용자 PATH의 openspec 버전과 상관없이 고정 버전을 쓴다.
+OPENSPEC_VERSION="1.14.1"
+exec npx -y "@fission-ai/openspec@${OPENSPEC_VERSION}" "$@"
