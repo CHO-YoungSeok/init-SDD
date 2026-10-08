@@ -2,20 +2,24 @@
 
 ## Purpose
 
-finalizer가 "archive CLI를 직접 돌리지 마라"는 옳은 정책을 실측과 어긋나는 근거로
-뒷받침하지 않게 한다. 틀린 근거를 남겨 두면 다음 사람이 그걸 믿고 잘못 판단한다.
+finalizer가 "사용자 승인 없이 archive하지 않는다"는 정책을 실측과 맞는 근거로만 뒷받침하고, 승인 뒤에는 `openspec archive --yes` 한 길로만 가게 한다. 틀린 근거를 남겨 두면 다음 사람이 그걸 믿고 잘못 판단한다.
 
 ## Requirements
 
 ### Requirement: finalizer의 archive 금지 근거는 실측과 일치해야 한다
 
-`.claude/agents/finalizer.md` 5단계(archive)는 다음 두 가지만 근거로 들어야 한다(SHALL):
+`.claude/agents/finalizer.md` 5단계(archive)는 사용자 승인 없이 archive하지 않는 이유로
+다음 두 가지만 근거로 들어야 한다(SHALL):
 ① `openspec archive`는 change 디렉터리를 옮기며 **되돌릴 수 없으므로 사용자가 정한다**,
-② stdin이 없어서 `--yes` 없이는 확인 프롬프트에서 죽는다.
+② stdin이 없어서 `--yes` 없이는 확인 프롬프트에서 죽는다 — 그래서 승인 뒤에 돌릴 때는
+반드시 `--yes`를 붙인다.
 실측과 반대인 두 근거 — "손으로 sync한 뒤 돌리면 이중 적용이라 RENAMED/REMOVED가 깨진다",
-"validate가 에러로 막는 change도 archive는 그냥 한다. 안전망이 아니다" — 는 제거되어야 한다(MUST).
-정책 자체(사용자 확인 없이 archive하지 않는다)와 `openspec-archive-change` 절차 한 길로만
-간다는 결론은 바뀌지 않아야 한다(SHALL).
+"validate가 에러로 막는 change도 archive는 그냥 한다. 안전망이 아니다" — 는 없어야 한다(MUST NOT).
+
+정책(프롬프트에 `archive: 해도 됨`이 없으면 archive하지 않는다)은 바뀌지 않아야 한다(SHALL).
+archive는 승인을 받고 조사 조건(validate 성공, 미완료 작업 없음)이 맞을 때
+`openspec archive "<이름>" --yes` **한 길로만** 간다(SHALL). 스캐폴드 스킬 문서의 archive
+절차를 읽어 따르거나 `mv`로 직접 옮기지 않는다(MUST NOT).
 
 #### Scenario: "이중 적용" 근거를 제거한다
 
@@ -38,5 +42,6 @@ finalizer가 "archive CLI를 직접 돌리지 마라"는 옳은 정책을 실측
 #### Scenario: 정책과 결론은 그대로다
 
 - **WHEN** finalizer가 archive 요청을 받는다
-- **THEN** `openspec archive` CLI를 직접 돌리지 않고 `openspec-archive-change` 절차 한 길로만 가며,
-  사용자 확인이 필요한 지점에서는 진행하지 않고 보고한다
+- **THEN** 프롬프트에 `archive: 해도 됨`이 없으면 조사만 하고 진행하지 않고 보고한다
+- **AND** 승인이 있고 조사 조건이 맞으면 `openspec archive "<이름>" --yes`로만 archive한다
+- **AND** finalizer.md에 스캐폴드 archive 스킬 이름이나 그 SKILL.md 경로가 없다

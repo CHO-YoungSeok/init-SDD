@@ -120,6 +120,10 @@ analyzer가 옵트인이 되었으므로, "모든 정식 요청이 방안 선택
 대목은 사실과 맞게 고쳐야 한다. **관문을 없애는 것이 아니므로** "관문이 사라졌다"고 적어서도
 안 된다(MUST NOT) — analyzer를 부르면 그대로 뜬다는 것이 정확한 서술이다.
 
+기본 경로가 작은 작업 경로가 되었으므로, 사용자가 개입하는 지점도 작은 작업과 큰 작업을
+**나눠** 적어야 한다(SHALL). 작은 작업에는 designer가 없어 결정 기록(decision.md)과 설계 요약
+알림이 없다. 작은 작업에도 결정 기록 개입 지점이 있다고 적어서는 안 된다(MUST NOT).
+
 #### Scenario: 예제 실행 문서
 
 - **WHEN** `docs/example-run.md`에서 사용자가 자기 안을 내는 대목을 읽는다
@@ -139,8 +143,10 @@ analyzer가 옵트인이 되었으므로, "모든 정식 요청이 방안 선택
 
 - **WHEN** `README.md`의 "이게 왜 필요한가" 절을 읽는다
 - **THEN** 방안 선택 관문이 모든 요청에서 **강제로** 일어난다고 적혀 있지 않다
-- **AND** 그 관문을 원할 때 열 수 있다는 것과, 기본 경로에서도 남아 있는 개입 지점
-  (범위 밖 확인, 결정 기록, 리뷰, 커밋 관문)이 무엇인지 알 수 있다
+- **AND** 그 관문을 원할 때 열 수 있다는 것을 알 수 있다
+- **AND** 작은 작업(기본 경로)에 남아 있는 개입 지점이 범위 밖 확인, 리뷰, 커밋 관문이라는 것을 알 수 있다
+- **AND** 큰 작업에서는 여기에 결정 기록(설계 요약 알림)이 더해진다는 것을 알 수 있고,
+  결정 기록이 작은 작업의 개입 지점으로 적혀 있지 않다
 
 #### Scenario: README의 경로 표와 묻는 횟수
 
@@ -184,30 +190,33 @@ analyzer가 옵트인이 되었으므로, "모든 정식 요청이 방안 선택
 
 ### Requirement: 기본 경로에는 analyzer와 방안 선택 관문이 없어야 한다
 
-파이프라인의 **기본 경로**는 `preparer → designer → worker → reviewer +
-regression-verifier → finalizer` 여야 한다(SHALL). 사용자가 analyzer를 부르지 않은 일반
+파이프라인의 **기본 경로**는 작은 작업 경로 `preparer → worker → reviewer → finalizer`여야
+한다(SHALL). **큰 작업 경로**는 `preparer → designer → worker → reviewer +
+regression-verifier(조건부) → finalizer`다. 어느 경로든 사용자가 analyzer를 부르지 않은
 요청에서는 방안 3가지 생성과 "★사용자가 방안 선택" 관문이 일어나서는 안 된다(MUST NOT).
+작은 작업과 큰 작업을 가르는 기준은 `agent-instructions/lite-default-path`가 정한다.
 
-파이프라인 순서를 적은 문서는 **모두 이 순서와 같은 순서를 적어야 한다**(MUST):
+파이프라인 순서를 적은 문서는 **모두 같은 두 경로를 같은 순서로 적어야 한다**(MUST):
 `.claude/skills/orchestra/SKILL.md`(frontmatter `description`, 파이프라인 그림),
 `CLAUDE.md`, `README.md`. 한 곳만 고치면 나머지가 조용히 갈라진다.
 
 `analyzer`가 사라지는 것이 아니다. `.claude/agents/analyzer.md`는 그대로 남아 있어야
 하며(MUST), analyzer를 부른 경우의 방안 제시 → 선택 → 재호출 흐름도 그대로 유지되어야
-한다(MUST).
+한다(MUST). analyzer를 부르면 그 change는 큰 작업 경로로 간다.
 
 #### Scenario: 세 문서의 순서 문구가 일치한다
 
 - **WHEN** `.claude/skills/orchestra/SKILL.md`, `CLAUDE.md`, `README.md`에서 파이프라인
   순서를 적은 대목을 각각 읽는다
-- **THEN** 세 곳 모두 `preparer` 다음이 `designer`이고, 그 사이에 `analyzer`나
-  "사용자가 방안 선택"이 끼어 있지 않다
-- **AND** 세 곳 모두 `reviewer`와 `regression-verifier`가 동시에 돌고 그 뒤가 `finalizer`다
+- **THEN** 세 곳 모두 기본(작은 작업) 경로가 `preparer` 다음 `worker`, 그 다음 `reviewer`, 그 뒤 `finalizer`다
+- **AND** 세 곳 모두 큰 작업 경로가 `preparer` 다음 `designer`이고, `reviewer`와
+  `regression-verifier`(조건부)가 동시에 돈 뒤 `finalizer`다
+- **AND** 어느 경로에도 `analyzer`나 "사용자가 방안 선택"이 기본 단계로 끼어 있지 않다
 
 #### Scenario: 파이프라인 그림에 방안 선택 관문이 기본 단계로 없다
 
 - **WHEN** `.claude/skills/orchestra/SKILL.md`의 파이프라인 그림을 읽는다
-- **THEN** `[preparer]` 다음 단계가 `[designer]`다
+- **THEN** `[preparer]` 다음이 크기 분기이고, 작은 작업 갈래는 `[worker]`, 큰 작업 갈래는 `[designer]`로 간다
 - **AND** `[analyzer]` 단계와 `★ 사용자가 안을 고른다` 줄이 기본 흐름 안에 없다
 - **AND** analyzer를 부른 경우의 흐름은 별도 절(옵트인 절)에서 찾을 수 있다
 
@@ -260,16 +269,16 @@ regression-verifier → finalizer` 여야 한다(SHALL). 사용자가 analyzer�
 - **AND** 그때 사용자에게 방안 비교를 해볼지 한 줄로 물어보는(권하는) 지점이 함께 적혀 있다
 - **AND** 그렇게 기울인 이유가 한 문장으로 적혀 있다
 
-### Requirement: 기본 경로의 designer 호출은 채택안이 없음을 명시해야 한다
+### Requirement: analyzer 없이 부르는 designer 호출은 채택안이 없음을 명시해야 한다
 
-`.claude/skills/orchestra/SKILL.md`의 designer 호출 절차는, analyzer를 부르지 않은 기본
-경로에서 designer 프롬프트에 `analyzer 생략: 예`와 `채택안: 없음`을 싣도록 지시해야
-한다(SHALL).
+`.claude/skills/orchestra/SKILL.md`의 designer 호출 절차는, analyzer를 부르지 않은 큰 작업
+경로(작은 작업에서 큰 작업으로 올라온 경우 포함)에서 designer 프롬프트에 `analyzer 생략: 예`와
+`채택안: 없음`을 싣도록 지시해야 한다(SHALL).
 
 이 두 줄이 빠지면 designer는 `RESULT: 설계중단 | reason=채택안 없음`으로 멈춘다.
 `.claude/agents/designer.md`가 "채택안도 `analyzer 생략: 예`도 둘 다 없으면 설계를 시작하지
-마라"고 규정하고 있기 때문이다. 기본 경로가 analyzer 없는 경로가 되면서 이 조합이 **예외가
-아니라 평소 경로**가 되므로, 지휘 문서의 기본 호출 예시가 이 두 줄을 가지고 있어야 한다(MUST).
+마라"고 규정하고 있기 때문이다. analyzer 없이 큰 작업으로 가는 것이 **예외가 아니라 평소
+경로**이므로, 지휘 문서의 그 호출 예시가 이 두 줄을 가지고 있어야 한다(MUST).
 
 #### Scenario: 기본 designer 호출 예시
 

@@ -42,7 +42,8 @@ SDD 파이프라인의 에이전트가 change의 `.openspec.yaml`에 `skip_specs
 ### Requirement: 마커 삽입 지침은 여러 번 실행해도 안전해야 한다
 
 파이프라인에는 같은 지침이 두 번 실행되는 경로가 실제로 있다
-(worker가 designer로 되돌아오는 경우, `openspec-update-change` 경로 등).
+(worker가 designer로 되돌아오는 경우, designer가 이미 있는 산출물을 고치는 경우,
+작은 작업이 큰 작업으로 올라가 designer가 preparer의 산출물을 이어받는 경우 등).
 따라서 지침에 박힌 명령은 멱등해야 한다(MUST). 마커 키가 이미 있으면 아무것도 하지
 않아야 하고, 파일의 마지막 줄에 개행이 없더라도 마커가 앞 줄에 이어 붙지 않아야 한다.
 

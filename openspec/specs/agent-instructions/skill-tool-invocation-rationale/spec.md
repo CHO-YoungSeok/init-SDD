@@ -8,38 +8,42 @@
 
 ## Requirements
 
-### Requirement: 다섯 에이전트 지시문의 스킬 호출 문단은 allowed-tools 제약을 근거로 들어야 한다
+### Requirement: 스킬 호출 근거 문단은 sdd-rules 한 곳에서 allowed-tools 제약을 근거로 들어야 한다
 
-`.claude/agents/preparer.md`, `.claude/agents/designer.md`, `.claude/agents/worker.md`,
-`.claude/agents/finalizer.md`, `.claude/agents/analyzer.md`의 해당 블록인용 문단은
-다음 세 가지를 담아야 한다(SHALL):
-(a) 스킬을 부르지 말고 `.claude/skills/<이름>/SKILL.md`를 Read로 읽어 그 절차를 따를 것,
-(b) 그 근거로 6개 openspec 스킬이 frontmatter에 `allowed-tools: Bash(openspec:*)`를 선언해
+"openspec 스킬을 왜 부르지 않는가"를 설명하는 문단은 `.claude/skills/sdd-rules/SKILL.md`의
+쓰는 스킬 절 **한 곳에만** 있어야 한다(SHALL). `.claude/agents/preparer.md`,
+`.claude/agents/designer.md`, `.claude/agents/worker.md`, `.claude/agents/finalizer.md`,
+`.claude/agents/analyzer.md`에는 그 문단의 사본이 있어서는 안 된다(MUST NOT). 에이전트는
+frontmatter `skills:`로 sdd-rules를 주입받는다.
+
+그 문단은 다음 세 가지를 담아야 한다(SHALL):
+(a) `openspec init`이 까는 openspec 스킬은 부르지도, 그 SKILL.md를 읽고 따르지도 않으며,
+산출물은 `openspec instructions <artifact>` 출력의 지시를 따를 것,
+(b) 그 근거로 openspec 스킬이 frontmatter에 `allowed-tools: Bash(openspec:*)`를 선언해
 스킬이 도는 동안 쓸 수 있는 도구가 `openspec` 셸 명령 하나로 좁혀져 산출물 파일도 못 쓰고
 코드도 못 고친다는 사실,
 (c) 결론 문장 "스킬을 못 부른다는 이유로 절대 멈추지 마라."
-"`Skill` 도구가 없을 수 있다"는 서술은 사실이 아니므로 다섯 파일 모두에서 제거되어야 한다(MUST).
-다섯 파일의 그 문단은 **글자 단위로 같아야 한다**(SHALL). 한 곳만 갱신되면 같은 저장소 안에서
-같은 자리가 서로 다른 말을 하게 되고, 그중 하나는 거짓이 된다.
+"`Skill` 도구가 없을 수 있다"는 서술은 사실이 아니므로 sdd-rules와 다섯 에이전트 파일 어디에도
+있어서는 안 된다(MUST NOT).
 
 #### Scenario: 거짓 근거가 사라진다
 
-- **WHEN** 다섯 파일에서 "`Skill` 도구가 없을 수 있다"를 찾는다
-- **THEN** 다섯 파일 어디에도 남아 있지 않다 (현 환경에서 다섯 에이전트 모두 frontmatter `tools:` 줄에
-  `Skill`을 갖고 있다 — 실측)
+- **WHEN** sdd-rules와 다섯 에이전트 파일에서 "`Skill` 도구가 없을 수 있다"를 찾는다
+- **THEN** 어디에도 남아 있지 않다
 
 #### Scenario: 진짜 근거가 들어간다
 
-- **WHEN** 에이전트가 왜 스킬을 부르면 안 되는지 확인한다
-- **THEN** `allowed-tools: Bash(openspec:*)` 때문에 스킬 실행 중 도구가 좁혀진다는 근거를 읽는다
+- **WHEN** 에이전트가 왜 openspec 스킬을 부르지 않는지 확인한다
+- **THEN** sdd-rules에서 `allowed-tools: Bash(openspec:*)` 때문에 스킬 실행 중 도구가 좁혀진다는 근거를 읽는다
+- **AND** 대신 `openspec instructions <artifact>` 출력을 따르라는 지시를 읽는다
 
-#### Scenario: 결론 문장은 다섯 파일 모두에 그대로 남는다
+#### Scenario: 결론 문장은 sdd-rules에 있다
 
 - **WHEN** 에이전트가 스킬을 부르지 못하는 상황을 만난다
-- **THEN** "스킬을 못 부른다는 이유로 절대 멈추지 마라."는 문장이 다섯 파일 모두에 있어 멈추지 않는다
+- **THEN** 주입받은 sdd-rules에 "스킬을 못 부른다는 이유로 절대 멈추지 마라."는 문장이 있어 멈추지 않는다
 
-#### Scenario: 다섯 파일의 문단이 글자 단위로 같다
+#### Scenario: 문단이 한 벌뿐이다
 
-- **WHEN** 다섯 파일의 해당 블록인용만 뽑아 각각 md5를 낸다
-- **THEN** 다섯 값이 모두 같다 — 한 벌의 같은 문구가 다섯 곳에 동일하게 들어가 있어
-  한 곳만 갱신되는 어긋남이 생기지 않는다 (개수 세기 grep으로는 "문구가 조금 다른" 경우를 못 잡는다)
+- **WHEN** `grep -c "allowed-tools: Bash(openspec:"`를 다섯 에이전트 파일과 sdd-rules에 각각 돌린다
+- **THEN** sdd-rules에서만 1 이상이고, 다섯 에이전트 파일은 모두 0이다
+- **AND** 다섯 에이전트 파일 어디에도 스캐폴드 SKILL.md를 Read로 읽으라는 지시가 없다
