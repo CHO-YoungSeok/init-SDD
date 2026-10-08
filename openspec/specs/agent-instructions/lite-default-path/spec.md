@@ -17,8 +17,8 @@ design.md는 만들지 않는다.
 `preparer → designer → worker → reviewer (+ regression-verifier) → 커밋 관문 → finalizer`다(SHALL).
 analyzer는 어느 경로에도 기본으로 들어가지 않는다 — 사용자가 분석을 요청할 때만 부른다.
 
-동작이 안 바뀌는 아주 작은 수정(오타·주석·이름)은 지금처럼 `worker(모드: 경량) →
-finalizer(모드: 경량 커밋)`으로 간다. 이 경로는 바뀌지 않는다.
+동작이 안 바뀌는 아주 작은 수정(오타·주석·이름)은 `worker(모드: 경량) →
+finalizer(모드: 경량 커밋)`으로 간다(SHALL).
 
 #### Scenario: orchestra 파이프라인 그림
 
@@ -37,8 +37,8 @@ finalizer(모드: 경량 커밋)`으로 간다. 이 경로는 바뀌지 않는�
 - **WHEN** 같은 방식으로 `proposal.md`, `tasks.md`, 요구사항 하나짜리 specs 델타만 있는 change를 만든다
 - **THEN** `openspec validate "<이름>" --strict`가 종료코드 0이다
 - **AND** `openspec instructions apply --change "<이름>" --json`의 `state`가 `ready`다
-- **AND** 위 두 시나리오의 결과를 로컬 CLI(1.12.0)와 `npx -y @fission-ai/openspec@1.14.1` 양쪽에서 확인해 보고한다
-- **AND** 네트워크가 없어 `npx`가 실패하면 그 출력을 그대로 붙여 1.14.1 쪽을 "못 함"으로 보고한 것으로 이 조건을 충족한 것으로 본다
+- **AND** 위 두 시나리오의 결과를 플러그인이 고정한 `sdd-openspec`(1.14.1)으로 확인한다
+- **AND** 네트워크가 없어 `sdd-openspec`(npx)이 실패하면 그 출력을 그대로 붙여 "못 함"으로 보고한 것으로 이 조건을 충족한 것으로 본다
 
 ### Requirement: 큰 작업 판정 기준은 orchestra 한 곳에만 있어야 한다
 
@@ -48,11 +48,6 @@ finalizer(모드: 경량 커밋)`으로 간다. 이 경로는 바뀌지 않는�
 마이그레이션 복잡도, 코딩 전에 기술 결정이 필요한 모호함)와 "사용자가 분석·방안 비교를
 요청했다"를 모두 담아야 한다(MUST). 하나라도 해당하면 큰 작업이다. 애매하면 큰 작업으로
 판정한다(SHALL) — 작은 작업 경로에는 설계 단계가 없어서, 잘못 판정하면 worker가 막힌다.
-
-판정은 preparer가 한다(SHALL). preparer.md에는 네 가지 기준 문장을 다시 적지 않고, 기준을
-`openspec instructions design --change "<이름>" --json`의 `instruction`에서 읽으며 정본이
-orchestra의 그 절이라는 것을 가리킨다(SHALL). 다른 에이전트 파일에도 판정 기준 문장이 있어서는
-안 된다(MUST NOT).
 
 #### Scenario: orchestra에 판정 절이 있다
 
@@ -94,7 +89,7 @@ orchestra가 regression-verifier를 켤지 정할 때 쓴다.
 `openspec validate "<이름>" --strict`와 `openspec status --change "<이름>" --json`의 종료코드를
 둘 다 확인한다(SHALL).
 
-`size=큼`일 때는 지금처럼 proposal까지만 쓴다(SHALL). specs·design·tasks는 designer가 쓴다.
+`size=큼`일 때는 proposal까지만 쓴다(SHALL). specs·design·tasks는 designer가 쓴다.
 
 preparer.md의 마커 명령 블록(기존 키 보존, 멱등, 두 종료코드 확인, `.openspec.yaml` 직접
 열어 세 가지 확인)은 그대로 남아야 한다(MUST).
@@ -116,17 +111,11 @@ preparer.md의 마커 명령 블록(기존 키 보존, 멱등, 두 종료코드 
 
 orchestra는 regression-verifier를 **큰 작업이면서 실행 코드가 바뀌었고 프로젝트에 테스트
 명령이 있을 때만** 불러야 한다(SHALL). 이 조건을 orchestra에 적어야 한다(MUST).
+실행 코드가 바뀌었는지는 orchestra가 worker 보고서의 만진 파일 목록으로 판단한다(SHALL).
 
 작은 작업 경로에서는 reviewer가 프로젝트의 테스트 명령을 **한 번** 돌려 결과를 review.md와
 RESULT에 남긴다(SHALL). `agents/reviewer.md`에 이 지시가 있어야 한다(MUST).
 테스트 명령이 없으면 돌리지 않고 "테스트 없음"으로 적는다.
-
-실행 코드가 바뀌었는지는 orchestra가 worker 보고서의 만진 파일 목록으로 판단한다(SHALL).
-
-regression-verifier를 부르지 않았으면 orchestra는 finalizer 프롬프트에
-`regression 판정: 생략(<이유>)`을 글자로 적어 보내야 한다(SHALL). 이유는 `작은 작업`,
-`테스트 명령 없음`, `실행 코드 변경 없음`(큰 작업이지만 만진 파일에 실행 코드가 없음) 중 하나다. finalizer는 이 줄이 있으면
-회귀 판정 없이 진행하고, `regression 판정:` 줄이 **아예 없으면** 지금처럼 멈춘다(SHALL).
 
 #### Scenario: orchestra에 호출 조건이 있다
 
@@ -163,3 +152,30 @@ preparer도 쓰게 되었으므로 그 이유가 사라졌다.
 - **WHEN** orchestra에서 작은 작업 경로의 worker가 설계 구멍을 보고한 경우의 지시를 읽는다
 - **THEN** 큰 작업으로 올려 designer를 부르라는 지시가 있다
 - **AND** designer 프롬프트에 preparer가 쓴 산출물이 이미 있다는 사실이 실린다
+
+### Requirement: 크기 판정은 preparer가 하고 에이전트 파일에 기준 사본을 두지 않아야 한다
+
+작은 작업과 큰 작업의 판정은 preparer가 한다(SHALL). preparer.md에는 네 가지 기준 문장을 다시
+적지 않고, 기준을 `openspec instructions design --change "<이름>" --json`의 `instruction`에서 읽으며
+정본이 orchestra의 그 절이라는 것을 가리킨다(SHALL). 다른 에이전트 파일에도 판정 기준 문장이
+있어서는 안 된다(MUST NOT).
+
+#### Scenario: preparer가 판정을 맡는다
+
+- **WHEN** `agents/preparer.md`를 읽는다
+- **THEN** 크기를 판정해 RESULT의 `size=`로 올리라는 지시가 있다
+- **AND** 판정 기준의 정본이 orchestra의 절이라는 것을 가리킨다
+
+### Requirement: 회귀 검증을 생략하면 finalizer 프롬프트에 생략 이유를 적어야 한다
+
+regression-verifier를 부르지 않았으면 orchestra는 finalizer 프롬프트에
+`regression 판정: 생략(<이유>)`을 글자로 적어 보내야 한다(SHALL). 이유는 `작은 작업`,
+`테스트 명령 없음`, `실행 코드 변경 없음`(큰 작업이지만 만진 파일에 실행 코드가 없음) 중 하나다.
+finalizer는 이 줄이 있으면 회귀 판정 없이 진행하고, `regression 판정:` 줄이 **아예 없으면**
+멈춘다(SHALL).
+
+#### Scenario: finalizer 호출 예시에 생략 이유 세 가지가 있다
+
+- **WHEN** `skills/orchestra/SKILL.md`의 커밋 관문 절에서 finalizer 호출 예시를 읽는다
+- **THEN** `regression 판정:` 줄에 `생략(작은 작업)`, `생략(테스트 명령 없음)`, `생략(실행 코드 변경 없음)`이 있다
+- **AND** 이 줄을 빼지 말라는 지시가 있다

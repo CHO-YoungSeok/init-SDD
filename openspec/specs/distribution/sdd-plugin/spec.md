@@ -33,7 +33,7 @@ git 사용자 이름. 이메일은 넣지 않는다(SHALL).
 
 `claude plugin validate .`와 `claude plugin validate .claude-plugin/plugin.json`을 `--strict`로 **둘 다**
 통과해야 한다(MUST). `marketplace.json`이 있으면 앞의 명령은 마켓플레이스 매니페스트를 보고 `plugins[0]`(source `./`)을
-따라가 `plugin.json`과 에이전트·스킬도 검사한다(관문 1.3 실측, Claude Code 2.1.294). 뒤의 명령은 그래서 중복이지만
+따라가 `plugin.json`과 에이전트·스킬도 검사한다(실측, Claude Code 2.1.294). 뒤의 명령은 그래서 중복이지만
 해가 없고, Claude Code 버전에 따라 동작이 다를 수 있어 둘 다 유지한다.
 
 #### Scenario: 두 검증 명령이 모두 통과한다
@@ -142,22 +142,6 @@ git 사용자 이름. 이메일은 넣지 않는다(SHALL).
 - **WHEN** 저장소 루트에서 새 `claude -p` 프로세스에 `.claude/CLAUDE.md`에만 있는 문장을 그대로 인용하라고 묻는다(파일 읽기 도구 없이)
 - **THEN** 그 문장이 답에 나온다
 
-### Requirement: README는 플러그인 설치를 먼저 안내해야 한다
-
-`README.md`는 다음을 담아야 한다(MUST):
-- 플러그인 설치 두 줄(`/plugin marketplace add <owner/repo 또는 경로>`, `/plugin install sdd@sdd-marketplace`)
-- 새 프로젝트에서 한 번 실행하는 `/sdd:init`
-- 기존 방식(`install.sh`, `init-sdd`)에서 플러그인으로 옮기는 안내
-- `openspec init`이 까는 스캐폴드(`.claude/commands/opsx/`, `.claude/skills/openspec-*`)가 이 파이프라인에
-  필요 없다는 안내
-
-#### Scenario: README에 다섯 가지가 있다
-
-- **WHEN** `README.md`를 읽는다
-- **THEN** `/plugin marketplace add`와 `/plugin install sdd@sdd-marketplace`가 있다
-- **AND** `/sdd:init`, `claude --plugin-dir .`, 기존 방식에서 이전하는 안내가 있다
-- **AND** `.claude/commands/opsx/`와 `.claude/skills/openspec-*`가 필요 없다는 안내가 있다
-
 ### Requirement: README는 업데이트·팀 배포·실행 환경을 안내해야 한다
 
 `README.md`는 다음을 담아야 한다(MUST):
@@ -181,6 +165,22 @@ git 사용자 이름. 이메일은 넣지 않는다(SHALL).
 
 #### Scenario: 결과 폴더 무시와 인식 확인
 
-- **WHEN** `.gitignore`를 읽고 이 change의 검증 기록을 읽는다
+- **WHEN** `.gitignore`를 읽고 archive된 change `2026-10-09-convert-to-plugin`의 `verification.md`를 읽는다
 - **THEN** `.gitignore`에 `evals/results/` 줄이 있다
 - **AND** `claude plugin eval`이 `evals/`의 사례 이름을 인식했는지에 대한 확인 결과가 있다
+
+### Requirement: README는 플러그인 설치와 이전 안내를 담아야 한다
+
+`README.md`는 다음을 담아야 한다(MUST):
+- 플러그인 설치 두 줄(`/plugin marketplace add <owner/repo 또는 경로>`, `/plugin install sdd@sdd-marketplace`)
+- 새 프로젝트에서 한 번 실행하는 `/sdd:init`
+- 기존 방식(`install.sh`, `init-sdd`)에서 플러그인으로 옮기는 안내
+- `openspec init`이 까는 스캐폴드(`.claude/commands/opsx/`, `.claude/skills/openspec-*`)가 이 파이프라인에
+  필요 없다는 안내
+
+#### Scenario: README에 플러그인 안내 네 가지가 있다
+
+- **WHEN** `README.md`를 읽는다
+- **THEN** `/plugin marketplace add`와 `/plugin install sdd@sdd-marketplace`가 있다
+- **AND** `/sdd:init`과 기존 방식에서 이전하는 안내가 있다
+- **AND** `.claude/commands/opsx/`와 `.claude/skills/openspec-*`가 필요 없다는 안내가 있다

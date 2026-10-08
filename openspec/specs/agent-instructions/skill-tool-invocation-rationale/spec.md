@@ -2,9 +2,7 @@
 
 ## Purpose
 
-"openspec 스킬을 직접 부르지 마라"는 지침이 사실인 근거 위에 서게 한다. 지금 근거로 적힌
-"`Skill` 도구가 없을 수 있다"는 이 환경에서 거짓이고, 이 저장소의 "짐작하지 마라, 실측이
-정답"이라는 규칙을 스스로 어기고 있다.
+"openspec 스킬을 직접 부르지 마라"는 지침이 사실인 근거 위에 서게 한다. 근거는 openspec 스킬이 frontmatter의 `allowed-tools: Bash(openspec:*)`로 도구를 좁힌다는 사실이고, 그 문단은 `sdd-rules` 한 곳에만 둔다. "`Skill` 도구가 없을 수 있다" 같은 사실이 아닌 근거는 어디에도 두지 않는다.
 
 ## Requirements
 
@@ -16,13 +14,6 @@
 `agents/analyzer.md`에는 그 문단의 사본이 있어서는 안 된다(MUST NOT). 에이전트는
 frontmatter `skills:`로 sdd-rules를 주입받는다.
 
-그 문단은 다음 세 가지를 담아야 한다(SHALL):
-(a) `openspec init`이 까는 openspec 스킬은 부르지도, 그 SKILL.md를 읽고 따르지도 않으며,
-산출물은 `openspec instructions <artifact>` 출력의 지시를 따를 것,
-(b) 그 근거로 openspec 스킬이 frontmatter에 `allowed-tools: Bash(openspec:*)`를 선언해
-스킬이 도는 동안 쓸 수 있는 도구가 `openspec` 셸 명령 하나로 좁혀져 산출물 파일도 못 쓰고
-코드도 못 고친다는 사실,
-(c) 결론 문장 "스킬을 못 부른다는 이유로 절대 멈추지 마라."
 "`Skill` 도구가 없을 수 있다"는 서술은 사실이 아니므로 sdd-rules와 다섯 에이전트 파일 어디에도
 있어서는 안 된다(MUST NOT).
 
@@ -47,3 +38,20 @@ frontmatter `skills:`로 sdd-rules를 주입받는다.
 - **WHEN** `grep -c "allowed-tools: Bash(openspec:"`를 다섯 에이전트 파일과 sdd-rules에 각각 돌린다
 - **THEN** sdd-rules에서만 1 이상이고, 다섯 에이전트 파일은 모두 0이다
 - **AND** 다섯 에이전트 파일 어디에도 스캐폴드 SKILL.md를 Read로 읽으라는 지시가 없다
+
+### Requirement: 스킬 호출 근거 문단은 대신 따를 것과 근거와 결론을 함께 담아야 한다
+
+sdd-rules의 스킬 호출 근거 문단은 다음 세 가지를 담아야 한다(SHALL):
+(a) `openspec init`이 까는 openspec 스킬은 부르지도, 그 SKILL.md를 읽고 따르지도 않으며,
+산출물은 `openspec instructions <artifact>` 출력의 지시를 따를 것,
+(b) 그 근거로 openspec 스킬이 frontmatter에 `allowed-tools: Bash(openspec:*)`를 선언해
+스킬이 도는 동안 쓸 수 있는 도구가 `openspec` 셸 명령 하나로 좁혀져 산출물 파일도 못 쓰고
+코드도 못 고친다는 사실,
+(c) 결론 문장 "스킬을 못 부른다는 이유로 절대 멈추지 마라."
+
+#### Scenario: 세 요소가 한 문단에 있다
+
+- **WHEN** `skills/sdd-rules/SKILL.md`의 "쓰는 스킬" 절에서 openspec 스킬을 부르지 않는 이유를 적은 인용 문단을 읽는다
+- **THEN** openspec 스킬을 부르지도 읽고 따르지도 않는다는 지시가 있다
+- **AND** `allowed-tools: Bash(openspec:*)` 근거가 있다
+- **AND** "스킬을 못 부른다는 이유로 절대 멈추지 마라."가 있다
