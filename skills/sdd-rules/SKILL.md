@@ -10,16 +10,19 @@ SDD 파이프라인 서브에이전트 7개가 함께 지키는 규칙이다. �
 
 ## 쓰는 스킬 — OpenSpec 일은 CLI 지시를 따른다
 
-- 산출물은 `openspec instructions <artifact-id> --change "<이름>" --json`의 `template`·`instruction`을 따른다.
+- 산출물은 `sdd-openspec instructions <artifact-id> --change "<이름>" --json`의 `template`·`instruction`을 따른다.
   `context`·`rules`는 지켜야 할 제약이지, 파일에 복사해 넣을 내용이 아니다.
-- 경로와 상태는 `openspec status --change "<이름>" --json`에서 얻는다. 경로를 짐작하거나 하드코딩하지 않는다.
+- 경로와 상태는 `sdd-openspec status --change "<이름>" --json`에서 얻는다. 경로를 짐작하거나 하드코딩하지 않는다.
   `resolvedOutputPath`가 글롭(`*` 포함)이면 그 경로를 파일 이름으로 쓰지 않는다.
 - 성공·실패는 종료코드로 판정한다(`; echo "exit=$?"`). 파이프(`| tail` 등)를 붙이면 종료코드가 가려지니 붙이지 않는다.
-- CLI 안내가 이 프로젝트에 설치되지 않은 스킬을 가리키면 따르지 말고 `openspec instructions <artifact>`를 쓴다.
+- CLI 안내가 이 프로젝트에 설치되지 않은 스킬을 가리키면 따르지 말고 `sdd-openspec instructions <artifact>`를 쓴다.
+- openspec 명령은 `sdd-openspec`으로 친다(플러그인이 고정 버전 1.14.1을 실행하는 래퍼). PATH의 `openspec`이 1.14.1 이상이면
+  (`--version`으로 확인) `openspec`을 그대로 써도 된다. `sdd-openspec`이 PATH에 없으면(기존 설치 방식으로 깐 경우)
+  `openspec`을 쓰고 그 버전을 보고서에 적는다.
 - 주입되는 스킬: 7개 에이전트 모두 `sdd-rules`, finalizer는 sync 절차 `sdd-sync`도 받는다.
 
 > **openspec 공식 스킬은 부르지도, 그 SKILL.md를 읽고 따르지도 않는다.** `openspec init`이 까는
-> `openspec-*` 스킬 대신, 산출물은 `openspec instructions <artifact>` 출력의 지시를 따른다.
+> `openspec-*` 스킬 대신, 산출물은 `sdd-openspec instructions <artifact>` 출력의 지시를 따른다.
 > 이유: 그 스킬들은 frontmatter에 `allowed-tools: Bash(openspec:*)`를 선언한다. 스킬이 도는 동안
 > **쓸 수 있는 도구가 `openspec` 셸 명령 하나로 좁혀져서** 산출물 파일도 못 쓰고 코드도 못 고친다.
 > **스킬을 못 부른다는 이유로 절대 멈추지 마라.**
@@ -43,10 +46,13 @@ SDD 파이프라인 서브에이전트 7개가 함께 지키는 규칙이다. �
 
 ## code-explorer 부르기
 
-코드베이스나 스펙을 넓게 뒤져야 할 때 `Agent` 도구로 `code-explorer` 서브에이전트를 직접 부를 수 있다.
+코드베이스나 스펙을 넓게 뒤져야 할 때 `Agent` 도구로 `subagent_type: "sdd:code-explorer"`를 직접 부를 수 있다.
 예: "이 변수가 쓰이는 파일을 전부 찾아 달라", "이 변경이 메인 spec의 어느 요구사항과 겹치나?",
 "이 파일의 이전 버전에서는 어땠나?". 결과를 받아서 자기 일을 계속한다.
 다른 서브에이전트(preparer, analyzer 등)는 부르지 않는다 — 오케스트레이터만 지휘한다.
+결과가 `not found`이면 같은 프롬프트로 접두사 없는 `code-explorer`를 다시 부른다 — 기존 설치 방식(`install.sh`, `init-sdd`)으로
+깐 에이전트는 접두사 없이 실린다. 이 대비 규칙은 기존 설치 방식을 없애는 change에서 함께 지운다.
+부를 수 있는 대상을 `tools:` 설정으로 막을 수는 없다(실측) — 이 글 규칙을 지킨다.
 
 ## 되돌릴 수 없는 일
 
@@ -54,10 +60,10 @@ SDD 파이프라인 서브에이전트 7개가 함께 지키는 규칙이다. �
 - 파일·디렉터리 삭제, change 디렉터리 삭제 (worker 정리 모드에서 프롬프트가 경로를 글자 그대로 준 경우만 예외)
 - `git reset --hard`, `git checkout -- .`, `git clean`, 브랜치 삭제, stash 버리기
 - 커밋 (finalizer만), push·강제 푸시·히스토리 조작 (`push: 해도 됨`일 때 finalizer만)
-- `openspec archive` (`archive: 해도 됨`일 때 finalizer만), 메인 spec 파일 삭제, capability 은퇴
+- `sdd-openspec archive` (`archive: 해도 됨`일 때 finalizer만), 메인 spec 파일 삭제, capability 은퇴
 - DB 마이그레이션 실행, 외부 서비스 호출, 패키지 전역 설치
 
-되돌릴 수 있는 일(`git switch -c`, `openspec new change`, change 산출물 수정)은 해도 된다.
+되돌릴 수 있는 일(`git switch -c`, `sdd-openspec new change`, change 산출물 수정)은 해도 된다.
 "알아서 정리해라" 같은 지시는 거부하고, 지울 대상을 보고서에 적는다.
 
 ## RESULT 한 줄 보고 형식

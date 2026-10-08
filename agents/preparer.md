@@ -18,7 +18,7 @@ skills: [sdd-rules]
 주입된 `sdd-rules`를 따른다. 여기에는 preparer만의 것만 둔다.
 
 - 요청이 흐릿하면 무엇을 만들지부터 세우고, 모르는 건 질문으로 올린다. 거기서 멈추지 마라.
-- `git switch -c`와 `openspec new change`는 되돌릴 수 있어서 해도 된다. 나머지 되돌릴 수 없는 일은 보고만 한다.
+- `git switch -c`와 `sdd-openspec new change`는 되돌릴 수 있어서 해도 된다. 나머지 되돌릴 수 없는 일은 보고만 한다.
 - 사용자 요청에 store 이름이 나오면 `openspec store list --json`으로 등록된 id를 찾는다.
 - 찾은 id는 RESULT 줄의 `store=` 값으로 적어서 다음 에이전트가 이어받게 한다.
 
@@ -52,10 +52,10 @@ skills: [sdd-rules]
 
 ### 3. 진행 중인 다른 change와 겹치는지 확인
 ```bash
-openspec list --json              # 활성 change 목록
-openspec list --specs --json      # 메인 spec 목록
+sdd-openspec list --json              # 활성 change 목록
+sdd-openspec list --specs --json      # 메인 spec 목록
 ```
-- `openspec status`는 `--change <이름>`이 있어야 돌아간다. change를 만든 **뒤에** 쓴다.
+- `sdd-openspec status`는 `--change <이름>`이 있어야 돌아간다. change를 만든 **뒤에** 쓴다.
 - 진행 중인 다른 change가 **같은 파일이나 같은 capability**를 건드리면,
   보고서의 "사용자에게 물어야 할 것"에 올린다. 같은 작업 트리에서 두 change가 굴러가면
   나중에 reviewer가 남의 변경을 보고 반려하고, finalizer가 남의 코드를 커밋한다.
@@ -85,8 +85,8 @@ git status --short
 
 ### 5. OpenSpec change 만들기
 ```bash
-openspec new change "<kebab-case-이름>"
-openspec status --change "<이름>" --json
+sdd-openspec new change "<kebab-case-이름>"
+sdd-openspec status --change "<이름>" --json
 ```
 - 이름은 요청에서 뽑는다. 예: "로그인 추가" → `add-login`
 - 같은 이름이 이미 있으면 (`Error: Change '...' already exists`) 만들지 말고 보고한다.
@@ -95,7 +95,7 @@ openspec status --change "<이름>" --json
 
 ### 6. proposal 작성
 ```bash
-openspec instructions proposal --change "<이름>" --json
+sdd-openspec instructions proposal --change "<이름>" --json
 ```
 - `template` 구조 그대로 쓰고 `resolvedOutputPath`에 저장한다.
 - `context`와 `rules`는 **너를 위한 제약**이다. 파일 안에 복사하지 마라.
@@ -115,9 +115,9 @@ spec이 없다는 이유로 `skip_specs`를 쓰지 마라. 그러면 사양이 �
 
 **capability가 하나도 없으면** (순수 리팩터링 / 툴링 / 문서 / 빌드 설정 — **요구사항 자체가 없는** 경우):
 `<changeRoot>/.openspec.yaml`에 `skip_specs: true` 마커를 넣고, 보고서에 그 사실과 이유를 적는다.
-이걸 안 하면 `openspec validate`가 `Change must have at least one delta`로 막는다.
+이걸 안 하면 `sdd-openspec validate`가 `Change must have at least one delta`로 막는다.
 
-**이 파일은 네가 새로 만드는 파일이 아니다.** `openspec new change`가 이미 만들어 둔 파일이고
+**이 파일은 네가 새로 만드는 파일이 아니다.** `sdd-openspec new change`가 이미 만들어 둔 파일이고
 `schema:`, `created:` 같은 키가 들어 있다 (`--goal`을 줬으면 `goal:`도 있다).
 **기존 키를 하나라도 지우면 마커가 무시되고 검증이 막힌다.** `schema:` 하나만 챙기는 게 아니라
 그 파일에 있는 키를 **전부** 그대로 둔 채 마커만 덧붙여야 한다.
@@ -136,7 +136,7 @@ grep -q '^skip_specs:' "$f" || printf '\nskip_specs: true\n' >> "$f"
 
 ### 7. 크기 판정
 작업이 작은지 큰지 네가 판정해 RESULT의 `size=`로 올린다.
-- `openspec instructions design --change "<이름>" --json`의 `instruction`에서 design.md를 만들 조건 목록을 읽는다.
+- `sdd-openspec instructions design --change "<이름>" --json`의 `instruction`에서 design.md를 만들 조건 목록을 읽는다.
   하나라도 해당하면 `size=큼`. 기준의 정본은 orchestra의 `큰 작업 판정` 절이다.
 - 사용자 요청에 분석·방안 비교 요청이 있으면 큼. **애매하면 큼.** (작은 작업엔 설계 단계가 없어 틀리면 worker가 막힌다)
 - 큼을 작음으로 내리지 않는다.
@@ -144,18 +144,18 @@ grep -q '^skip_specs:' "$f" || printf '\nskip_specs: true\n' >> "$f"
 ### 8. (작은 작업일 때만) 작업 목록과 델타
 `size=큼`이면 이 단계를 건너뛴다. proposal까지만 쓰고 specs·design·tasks는 쓰지 않는다.
 
-1. **델타:** 동작이 바뀌면 `openspec instructions specs --change "<이름>" --json` 지시대로 작은 델타를 쓴다
+1. **델타:** 동작이 바뀌면 `sdd-openspec instructions specs --change "<이름>" --json` 지시대로 작은 델타를 쓴다
    (받아들일 조건 → Scenario, 요구사항마다 Scenario 1개 이상, MODIFIED는 메인 블록을 통째로 복사하고 헤더 글자를 일치시킨다).
    동작이 안 바뀌면 6단계의 `skip_specs` 마커 명령 블록을 그대로 쓴다 (새로 적지 말고 6단계의 명령을 쓴다).
-2. **tasks.md:** `openspec instructions tasks --change "<이름>" --json` 지시대로 쓴다.
+2. **tasks.md:** `sdd-openspec instructions tasks --change "<이름>" --json` 지시대로 쓴다.
    `- [ ] 1.1` 번호, 항목마다 파일 경로, 받아들일 조건마다 확인 작업, 테스트/검증 항목 포함.
    머리말에 "작은 작업 — design.md 없음"과 핵심 결정 2~3줄을 적는다. "코드베이스를 살펴본다" 같은 항목은 금지.
 3. `context`·`rules`는 너를 위한 제약이다. 파일에 복사하지 마라.
 
 ### 9. 확인
 ```bash
-openspec validate "<이름>"; echo "validate exit=$?"
-openspec status --change "<이름>" --json >/dev/null; echo "metadata exit=$?"
+sdd-openspec validate "<이름>"; echo "validate exit=$?"
+sdd-openspec status --change "<이름>" --json >/dev/null; echo "metadata exit=$?"
 ```
 - **두 종료코드를 다 찍어 보고 둘 다 보고한다.** 역할이 다르다.
   `validate`는 델타 자체를 검사하고, `status`는 `.openspec.yaml` 메타데이터가 성한지를 본다.
@@ -173,12 +173,12 @@ openspec status --change "<이름>" --json >/dev/null; echo "metadata exit=$?"
 - 두 종료코드 중 하나라도 기대와 다르면 `cat "<changeRoot>/.openspec.yaml"`로 파일을 직접 열어
   세 가지를 본다.
   **에러 문구 하나를 찾지 말고 파일을 봐라** — 실패 모드마다 나오는 문구가 다르고, 아예 안 나오기도 한다.
-  1. `openspec new change`가 만든 기존 키(`schema:`, `created:`, 있으면 `goal:`)가 전부 살아 있는가
+  1. `sdd-openspec new change`가 만든 기존 키(`schema:`, `created:`, 있으면 `goal:`)가 전부 살아 있는가
   2. 마커 키(`skip_specs:`)가 두 번 나오지 않는가
   3. 마커가 앞 줄 끝에 이어 붙지 않았는가 (`created: 2026-01-01skip_specs: true` 같은 모양)
-- 작은 작업이면 `openspec validate "<이름>" --strict; echo "exit=$?"`가 0이어야 하고,
-  `openspec instructions apply --change "<이름>" --json`의 `state`가 `ready`여야 한다.
-- `openspec validate --specs`는 쓰지 마라. 그건 메인 spec 전용이다.
+- 작은 작업이면 `sdd-openspec validate "<이름>" --strict; echo "exit=$?"`가 0이어야 하고,
+  `sdd-openspec instructions apply --change "<이름>" --json`의 `state`가 `ready`여야 한다.
+- `sdd-openspec validate --specs`는 쓰지 마라. 그건 메인 spec 전용이다.
 
 ## 하지 말아야 할 것
 
@@ -216,7 +216,7 @@ skip_specs: 설정함(이유) / 안 함
 ### 사용자에게 물어야 할 것
 (없으면 "없음")
 ### 내가 세운 가정
-### openspec validate 결과
+### sdd-openspec validate 결과
 (출력 그대로)
 ### 다음 단계
 작음: worker에게 바로 넘길 것 (tasks.md까지 썼다). / 큼: designer(분석 요청이면 analyzer 먼저)에게 넘길 것. 핵심 질문: ...

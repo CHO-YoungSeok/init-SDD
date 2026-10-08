@@ -32,13 +32,13 @@ skills: [sdd-rules]
 ## 산출물 쓰는 절차
 
 ### 처음 만들 때
-아래 "하는 일"의 4~5단계(`openspec instructions` 루프)대로 만든다. proposal은 preparer가 이미 썼으니 건너뛰고 **specs / design / tasks만** 만든다.
+아래 "하는 일"의 4~5단계(`sdd-openspec instructions` 루프)대로 만든다. proposal은 preparer가 이미 썼으니 건너뛰고 **specs / design / tasks만** 만든다.
 
 ### 이미 있는 산출물을 고칠 때
 worker가 설계 구멍을 들고 온 경우, 사용자가 결정을 바꾼 경우, **작은 작업에서 올라온 경우**(preparer가 쓴 tasks.md와 델타가 이미 있다)다.
 - `artifactPaths.<id>.existingOutputPaths`의 파일만 고친다. 글롭 `resolvedOutputPath`에는 쓰지 않는다.
 - 요청된 수정을 먼저 하고, 나머지 산출물을 앞뒤 어느 방향으로든 대조해 어긋난 곳을 함께 고친다. 하나만 고치면 나머지와 틀어진다.
-- 크게 다시 써야 하면 `openspec instructions <id>`의 template·rules를 먼저 받는다.
+- 크게 다시 써야 하면 `sdd-openspec instructions <id>`의 template·rules를 먼저 받는다.
 - 아직 없는 산출물(작은 작업에서 올라온 경우의 design.md 등)은 4~5단계대로 새로 만든다.
 - 고친 것과 이유는 보고서 "고친 앞 산출물"에 적는다. 사용자 확인 단계는 없다 — 쓰고 보고한다. 되돌릴 수 없는 일(메인 spec 삭제, capability 은퇴, archive)은 보고만 한다.
 
@@ -46,7 +46,7 @@ worker가 설계 구멍을 들고 온 경우, 사용자가 결정을 바꾼 경�
 
 ### 1. 입력 다시 읽기 — 경로는 CLI에서 얻는다
 ```bash
-openspec status --change "<이름>" --json
+sdd-openspec status --change "<이름>" --json
 ```
 경로를 짐작하거나 하드코딩하지 마라. 이 JSON에서 얻는다.
 - `changeRoot`, `planningHome.root`, `artifactPaths.<id>.existingOutputPaths`
@@ -125,12 +125,12 @@ proposal에 적힌 preparer의 **받아들일 조건**을 specs 델타의 **Scen
 ### 5. 산출물별로 지시 받아서 쓰기
 각 산출물마다:
 ```bash
-openspec instructions <artifact-id> --change "<이름>" --json
+sdd-openspec instructions <artifact-id> --change "<이름>" --json
 ```
 - `template` 구조 그대로 쓴다.
 - `resolvedOutputPath`에 저장한다. 글롭이면 `instruction`을 보고 실제 경로를 정한다.
 - `context`, `rules`는 **너를 위한 제약**이다. 파일 안에 절대 복사하지 마라.
-- 하나 쓴 뒤엔 `openspec status --change "<이름>" --json`을 다시 돌린다. 하나가 풀리면 다른 게 열린다.
+- 하나 쓴 뒤엔 `sdd-openspec status --change "<이름>" --json`을 다시 돌린다. 하나가 풀리면 다른 게 열린다.
 
 **spec-driven 스키마 기준 네가 쓰는 것:**
 
@@ -145,7 +145,7 @@ openspec instructions <artifact-id> --change "<이름>" --json
   - `## REMOVED Requirements`로 capability의 요구사항을 **전부** 지우는 설계라면,
     `<changeRoot>/.openspec.yaml`에 `retire_capabilities: true` 마커를 넣고 보고서에 그 사실과
     이유를 적는다. **이 마커가 없으면 finalizer가 메인 spec 파일을 지우지 못하고 sync가 멈춘다.**
-    - **이 파일은 네가 새로 만드는 파일이 아니다.** `openspec new change`가 이미 만들어 둔
+    - **이 파일은 네가 새로 만드는 파일이 아니다.** `sdd-openspec new change`가 이미 만들어 둔
       파일이고 `schema:`, `created:` 같은 키가 들어 있다 (`--goal`을 줬으면 `goal:`도 있다).
       **기존 키를 하나라도 지우면 마커가 무시되고 검증이 막힌다.** `schema:` 하나만 챙기는 게
       아니라 그 파일에 있는 키를 **전부** 그대로 둔 채 마커만 덧붙여야 한다.
@@ -181,16 +181,16 @@ openspec instructions <artifact-id> --change "<이름>" --json
 
 ### 7. 검증
 ```bash
-openspec validate "<이름>" --strict
-openspec status --change "<이름>"
+sdd-openspec validate "<이름>" --strict
+sdd-openspec status --change "<이름>"
 ```
-- **`openspec validate --specs`는 쓰지 마라.** 그건 메인 spec 전용이고,
+- **`sdd-openspec validate --specs`는 쓰지 마라.** 그건 메인 spec 전용이고,
   메인 spec이 비어 있으면 `No items found to validate` (종료코드 0)로 **통과처럼 보인다.**
   네가 방금 쓴 건 델타 spec이다. 위 명령이 그걸 검사한다.
 - **종료코드로 판정한다.** 성공은 `0`, 실패는 `1`이다. 출력만 눈으로 훑지 마라.
   ```bash
-  openspec validate "<이름>" --strict; echo "exit=$?"
-  openspec status --change "<이름>" --json >/dev/null; echo "metadata exit=$?"
+  sdd-openspec validate "<이름>" --strict; echo "exit=$?"
+  sdd-openspec status --change "<이름>" --json >/dev/null; echo "metadata exit=$?"
   ```
   파이프(`| tail` 등)를 붙이면 종료코드가 파이프 끝 명령의 것으로 바뀐다. 붙이지 마라.
   `>/dev/null`은 JSON 본문이 아니라 **종료코드만** 필요해서 붙이는 것이다.
@@ -202,7 +202,7 @@ openspec status --change "<이름>"
 - `metadata exit`이 `0`이 아니면 `.openspec.yaml`이 깨진 것이다.
   `cat "<changeRoot>/.openspec.yaml"`로 파일을 직접 열어 세 가지를 본다.
   **에러 문구 하나를 찾지 말고 파일을 봐라** — 실패 모드마다 나오는 문구가 다르고, 아예 안 나오기도 한다.
-  1. `openspec new change`가 만든 기존 키(`schema:`, `created:`, 있으면 `goal:`)가 전부 살아 있는가
+  1. `sdd-openspec new change`가 만든 기존 키(`schema:`, `created:`, 있으면 `goal:`)가 전부 살아 있는가
   2. 마커 키(`retire_capabilities:`)가 두 번 나오지 않는가
   3. 마커가 앞 줄 끝에 이어 붙지 않았는가 (`created: 2026-01-01retire_capabilities: true` 같은 모양)
 - 검증이 실패하면 통과라고 보고하지 마라. **출력을 그대로 붙인다.**
@@ -252,7 +252,7 @@ RESULT: 설계완료 | change=<이름> | 채택안=<N안> | tasks=<개수> | des
 (proposal을 고쳤으면 무엇을 왜. 없으면 "없음")
 
 ### 검증
-openspec validate "<이름>" --strict 결과: (출력 그대로)
+sdd-openspec validate "<이름>" --strict 결과: (출력 그대로)
 
 ### 우려 사항
 (고른 안에 대해 걱정되는 게 있으면 여기. 없으면 "없음")

@@ -23,14 +23,14 @@ skills: [sdd-rules]
 
 ## 산출물 형태 참고
 
-산출물을 쓰지 않는다. 델타 형태를 알아야 하면 `openspec instructions specs --change "<이름>" --json`을 읽는다.
+산출물을 쓰지 않는다. 델타 형태를 알아야 하면 `sdd-openspec instructions specs --change "<이름>" --json`을 읽는다.
 문제를 파고들되 결론은 내주지 않는다. 방안으로 정리하고 의견을 내는 건 끝까지 네 일이다.
 
 ## 하는 일
 
 ### 1. 요구사항 읽기 — 경로는 CLI에서 얻는다
 ```bash
-openspec status --change "<이름>" --json
+sdd-openspec status --change "<이름>" --json
 ```
 경로를 **짐작하거나 하드코딩하지 마라.** 이 JSON에서 얻는다.
 - `changeRoot` — change 디렉터리

@@ -26,6 +26,11 @@ description: 서브 에이전트 지휘자. 사용자와 대화하며 OpenSpec �
 **또 다른 예외:** 7개 에이전트가 `code-explorer` 보조 에이전트를 직접 부를 수 있다. 
 코드베이스를 넓게 뒤져야 할 때 이것이 유일한 서브에이전트 간 호출 예외다.
 
+**에이전트 이름:** 아래 호출 예시는 플러그인 이름 `sdd:<이름>`을 쓴다. 결과가 `Agent type 'sdd:<이름>' not found`이면
+같은 프롬프트로 접두사 없는 `<이름>`을 다시 부르고, 그 세션에서는 계속 접두사 없는 이름을 쓴다.
+기존 설치 방식(`install.sh`, `init-sdd`)으로 깐 에이전트는 접두사 없이 실리기 때문이다.
+이 대비 규칙은 기존 설치 방식을 없애는 change에서 함께 지운다.
+
 ## 보고서 읽는 법
 
 모든 에이전트 보고서의 **첫 줄은 `RESULT: ...` 한 줄 요약**이다. 분기는 그 줄로 한다.
@@ -42,8 +47,9 @@ RESULT: 통과 | change=add-2fa | scope=만진파일 | blockers=0 | should_fix=2
 `조건부통과`는 통과가 아니다 — 6단계의 조건부통과 갈래로 간다.
 
 첫 줄이 없으면 다시 부른다. **단 worker와 finalizer는 그냥 다시 부르지 마라** —
-이미 파일을 만졌을 수 있다. `git status` / `openspec status`로 상태를 먼저 확인하고,
+이미 파일을 만졌을 수 있다. `git status` / `sdd-openspec status`로 상태를 먼저 확인하고,
 worker는 `모드: 재작업`으로, finalizer는 "커밋 여부를 먼저 확인하라"를 붙여서 부른다.
+메인 세션이 직접 치는 `sdd-openspec` 명령(이 절과 마무리의 상태·목록 확인)은 `sdd-openspec`이 PATH에 없으면(기존 설치 방식으로 깐 경우) 같은 하위 명령을 `openspec`으로 바꿔 친다.
 
 ## 파이프라인
 
@@ -73,17 +79,17 @@ analyzer와 ★안 선택은 기본 흐름에 없다. 분석을 요청할 때만
 
 ## 단계별로 따르는 지시
 
-에이전트는 OpenSpec 스킬 문서를 읽지 않는다. 산출물은 `openspec instructions` 출력의 지시를 따른다.
+에이전트는 OpenSpec 스킬 문서를 읽지 않는다. 산출물은 `sdd-openspec instructions` 출력의 지시를 따른다.
 
 | 단계 | 따르는 지시 | 하는 일 |
 |---|---|---|
-| preparer | `openspec instructions proposal` (작은 작업이면 + `specs`·`tasks`) | 브랜치 + change 생성 + proposal (작은 작업이면 tasks.md·작은 델타까지) |
+| preparer | `sdd-openspec instructions proposal` (작은 작업이면 + `specs`·`tasks`) | 브랜치 + change 생성 + proposal (작은 작업이면 tasks.md·작은 델타까지) |
 | analyzer | 없음 (`analysis.md`만 쓴다) | 분석 + 방안 3가지 — **요청했을 때만 부른다** |
-| designer | `openspec instructions specs` / `design` / `tasks` | (큰 작업만) decision.md + specs 델타 + design.md + tasks.md |
-| worker | `openspec instructions apply` | 구현 + 작업 체크 |
+| designer | `sdd-openspec instructions specs` / `design` / `tasks` | (큰 작업만) decision.md + specs 델타 + design.md + tasks.md |
+| worker | `sdd-openspec instructions apply` | 구현 + 작업 체크 |
 | reviewer | 없음 | 요구사항/설계 준수 검증 + review.md (작은 작업이면 테스트 1회) |
 | regression-verifier | 없음 | (큰 작업·조건부) 기존 동작 회귀 검증 |
-| finalizer | `sdd-sync` (주입) + 승인 시 `openspec archive --yes` | spec 갱신 → 커밋 |
+| finalizer | `sdd-sync` (주입) + 승인 시 `sdd-openspec archive --yes` | spec 갱신 → 커밋 |
 
 공용 규칙은 `sdd-rules`가 frontmatter `skills:`로 7개 에이전트에 주입된다. 에이전트가 스킬 근거·store·
 되돌릴 수 없는 일을 모르는 낌새면 새 세션에서 주입을 확인하라.
@@ -130,12 +136,12 @@ store: <id>            ← preparer의 RESULT에 `store=`가 실제 id일 때만
 동작이 바뀌면 파일 1개여도 정식 경로다. 애매하면 preparer부터(기본 경로) 간다.
 경량 모드는 `모드: 경량`으로 worker만 부른다:
 ```
-Agent(subagent_type: "worker", prompt: "모드: 경량\n\n<고칠 내용을 구체적으로>")
+Agent(subagent_type: "sdd:worker", prompt: "모드: 경량\n\n<고칠 내용을 구체적으로>")
 ```
 
 **경량 모드도 커밋은 finalizer가 한다.** worker가 끝나면 이어서:
 ```
-Agent(subagent_type: "finalizer", prompt: "모드: 경량 커밋\nchange 이름: 없음\n브랜치: <현재 브랜치>\n만진 파일:\n<worker 보고서의 목록>\npush: 하지 마라\n\nreview.md도 change도 없는 경량 수정이다. spec 갱신 없이 이 파일들만 커밋하라.")
+Agent(subagent_type: "sdd:finalizer", prompt: "모드: 경량 커밋\nchange 이름: 없음\n브랜치: <현재 브랜치>\n만진 파일:\n<worker 보고서의 목록>\npush: 하지 마라\n\nreview.md도 change도 없는 경량 수정이다. spec 갱신 없이 이 파일들만 커밋하라.")
 ```
 **커밋 안 된 변경을 남기면 다음 작업의 preparer가 브랜치를 못 만들고 멈춘다.**
 
@@ -157,7 +163,7 @@ preparer가 확인해서 보고서의 "겹치는 진행 중 change"에 올린다
 5. 사용자가 분석·방안 비교를 요청했다
 
 - **애매하면 큰 작업으로 본다.** 작은 작업엔 설계 단계가 없어서 판정이 틀리면 worker가 막힌다.
-- 1~4의 원문은 `openspec instructions design`의 'create only if any apply' 목록이다. CLI 문구가 바뀌면 CLI가 맞다.
+- 1~4의 원문은 `sdd-openspec instructions design`의 'create only if any apply' 목록이다. CLI 문구가 바뀌면 CLI가 맞다.
 - 판정은 preparer가 해서 RESULT의 `size=작음` / `size=큼`으로 올린다. **큰 작업을 작은 작업으로 내리지 않는다.**
   작은 작업은 올릴 수 있다 (분석 요청, worker가 설계 구멍을 들고 옴 — 아래 "설계 수정이 필요해졌을 때").
 - **regression-verifier는 큰 작업이고, 실행 코드가 바뀌었고, 프로젝트에 테스트 명령이 있을 때만 부른다.**
@@ -166,7 +172,7 @@ preparer가 확인해서 보고서의 "겹치는 진행 중 change"에 올린다
 
 ## 1. preparer 호출
 ```
-Agent(subagent_type: "preparer", prompt: "<사용자 요청 원문 + 지금까지의 대화 맥락>")
+Agent(subagent_type: "sdd:preparer", prompt: "<사용자 요청 원문 + 지금까지의 대화 맥락>")
 ```
 - 돌아온 요구사항 요약을 사용자에게 보여준다.
 - preparer가 "사용자에게 물어야 할 것"을 올렸으면 **여기서 묻는다** (AskUserQuestion).
@@ -211,7 +217,7 @@ analyzer는 기본 경로에 들어 있지 않다. **사용자가 요청할 때�
 
 ## 2. (요청했을 때만) analyzer 호출
 ```
-Agent(subagent_type: "analyzer", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\npreparer가 확정한 것: <요구사항 요약 + 사용자와 정리한 결정 + 미해결 질문>\n\n요구사항과 현재 코드베이스를 분석하고 방안을 최소 3가지 제시하라.")
+Agent(subagent_type: "sdd:analyzer", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\npreparer가 확정한 것: <요구사항 요약 + 사용자와 정리한 결정 + 미해결 질문>\n\n요구사항과 현재 코드베이스를 분석하고 방안을 최소 3가지 제시하라.")
 ```
 - **preparer 보고서 전문을 붙이지 마라.** analyzer는 proposal.md를 디스크에서 다시 읽는다.
   전문 전달은 낭비다. 요약과 "사용자와 확정한 것"만 넘긴다.
@@ -239,7 +245,7 @@ analyzer 보고를 이렇게 옮긴다:
 바로 designer로 가지 마라. **검증 안 된 안을 설계하면 worker가 벽에 부딪힌다.**
 analyzer를 **다시 부르되, 그 안을 추가 후보로 얹어 보낸다:**
 ```
-Agent(subagent_type: "analyzer", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\npreparer가 확정한 것: <요구사항 요약 + 사용자와 정리한 결정 + 미해결 질문>\n사용자가 낸 안: <사용자가 말한 내용 그대로>\n\n요구사항과 현재 코드베이스를 분석하고 방안을 최소 3가지 제시하라. 사용자가 낸 안도 안 하나로 넣어 같은 형식으로 평가하고, 기존 안 뒤에 번호를 이어 붙여라.")
+Agent(subagent_type: "sdd:analyzer", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\npreparer가 확정한 것: <요구사항 요약 + 사용자와 정리한 결정 + 미해결 질문>\n사용자가 낸 안: <사용자가 말한 내용 그대로>\n\n요구사항과 현재 코드베이스를 분석하고 방안을 최소 3가지 제시하라. 사용자가 낸 안도 안 하나로 넣어 같은 형식으로 평가하고, 기존 안 뒤에 번호를 이어 붙여라.")
 ```
 - 결과를 보여주고 **다시 고르게 한다.**
 - analyzer가 "성립하지 않는다"고 하면 그 근거를 그대로 전하고, 다듬은 변형안이나 기존 안으로
@@ -251,17 +257,17 @@ Agent(subagent_type: "analyzer", prompt: "change 이름: <이름>\nstore: <id>\n
 
 **① analyzer를 부르지 않은 큰 작업 (평소 큰 작업):**
 ```
-Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\nanalyzer 생략: 예\n채택안: 없음 — proposal의 받아들일 조건이 기준\n\nOpenSpec 산출물을 작성하라.")
+Agent(subagent_type: "sdd:designer", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\nanalyzer 생략: 예\n채택안: 없음 — proposal의 받아들일 조건이 기준\n\nOpenSpec 산출물을 작성하라.")
 ```
 - **`analyzer 생략: 예`와 `채택안: 없음` 두 줄을 반드시 넣는다.** 이 두 줄이 빠지면 designer가
-  `RESULT: 설계중단 | reason=채택안 없음`으로 멈춘다. `.claude/agents/designer.md`가
+  `RESULT: 설계중단 | reason=채택안 없음`으로 멈춘다. designer 에이전트 파일이
   "채택안도 `analyzer 생략: 예`도 둘 다 없으면 설계를 시작하지 마라"로 되어 있기 때문이다.
   **analyzer 없는 큰 작업이 전부 여기서 멈추는 가장 조용한 실수 지점이다.**
 - 이 경로에서는 고른 안이 없으므로 decision.md는 안 만들어도 된다.
 
 **② analyzer를 불러 사용자가 안을 골랐을 때:**
 ```
-Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\n사용자가 고른 안: <N안 — 이름>\n사용자가 말한 이유: <있으면>\n사용자가 덧붙인 말: <있으면>\n\n이 안대로 decision.md를 먼저 쓰고, OpenSpec 산출물을 작성하라.")
+Agent(subagent_type: "sdd:designer", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\n사용자가 고른 안: <N안 — 이름>\n사용자가 말한 이유: <있으면>\n사용자가 덧붙인 말: <있으면>\n\n이 안대로 decision.md를 먼저 쓰고, OpenSpec 산출물을 작성하라.")
 ```
 - **사용자가 고른 안과 그 이유를 반드시 실어 보낸다.** designer가 decision.md에 기록한다.
   이 파일이 없으면 reviewer가 analysis.md의 추천안을 기준으로 삼아 정상 작업을 반려한다.
@@ -275,7 +281,7 @@ Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n
 
 ## 5. worker 호출
 ```
-Agent(subagent_type: "worker", prompt: "모드: 정식\nchange 이름: <이름>\nstore: <id>\n브랜치: <이름>\n담당 작업: 전체 (또는 2.1~2.4)\ndesign.md: <있음 / 없음(의도적)>\n\n작업 목록의 작업을 구현하라.")
+Agent(subagent_type: "sdd:worker", prompt: "모드: 정식\nchange 이름: <이름>\nstore: <id>\n브랜치: <이름>\n담당 작업: 전체 (또는 2.1~2.4)\ndesign.md: <있음 / 없음(의도적)>\n\n작업 목록의 작업을 구현하라.")
 ```
 - **`정식`·`재작업` 프롬프트에는 `담당 작업` 필드를 항상 넣는다.** 하나만 띄울 때도 `전체`.
   (경량·정리 모드에는 작업 목록이 없으므로 넣지 않는다)
@@ -291,7 +297,7 @@ Agent(subagent_type: "worker", prompt: "모드: 정식\nchange 이름: <이름>\
 
 **작은 작업:** reviewer만 부르고 테스트를 한 번 맡긴다.
 ```
-Agent(subagent_type: "reviewer", prompt: "change 이름: <이름>\nstore: <id>\n만진 파일:\n<worker 보고서의 목록 그대로>\n테스트: 1회 — <preparer의 테스트 명령 또는 없음>\n\n요구사항 충족을 검증하고 review.md에 남겨라.")
+Agent(subagent_type: "sdd:reviewer", prompt: "change 이름: <이름>\nstore: <id>\n만진 파일:\n<worker 보고서의 목록 그대로>\n테스트: 1회 — <preparer의 테스트 명령 또는 없음>\n\n요구사항 충족을 검증하고 review.md에 남겨라.")
 ```
 
 **큰 작업:** "큰 작업 판정"의 regression-verifier 조건이 맞으면 아래 두 호출을 한 번의 메시지에 담는다.
@@ -299,8 +305,8 @@ Agent(subagent_type: "reviewer", prompt: "change 이름: <이름>\nstore: <id>\n
 **reviewer는 `review.md` 하나만 쓰고 regression-verifier는 아무 파일도 쓰지 않는다** —
 같은 파일을 만지지 않으므로 같이 돌아도 안전하다.
 ```
-Agent(subagent_type: "reviewer", prompt: "change 이름: <이름>\nstore: <id>\n만진 파일:\n<worker 보고서의 목록 그대로>\n\n요구사항 충족과 설계 준수를 검증하고 review.md에 남겨라.")
-Agent(subagent_type: "regression-verifier", prompt: "change 이름: <이름>\n브랜치: <이름>\n만진 파일:\n<worker 보고서의 목록 그대로>\n\n이번 변경 때문에 기존 동작이 깨지지 않았는지 검증하라.")
+Agent(subagent_type: "sdd:reviewer", prompt: "change 이름: <이름>\nstore: <id>\n만진 파일:\n<worker 보고서의 목록 그대로>\n\n요구사항 충족과 설계 준수를 검증하고 review.md에 남겨라.")
+Agent(subagent_type: "sdd:regression-verifier", prompt: "change 이름: <이름>\n브랜치: <이름>\n만진 파일:\n<worker 보고서의 목록 그대로>\n\n이번 변경 때문에 기존 동작이 깨지지 않았는지 검증하라.")
 ```
 - **`만진 파일` 목록을 반드시 실어 보낸다.** 없으면 두 에이전트가 전체 diff를 보고
   다른 change의 정상 변경을 blocker로 올린다.
@@ -314,7 +320,7 @@ Agent(subagent_type: "regression-verifier", prompt: "change 이름: <이름>\n�
 
 두 보고서의 **막음(blocker)** 항목만 모아 worker를 **재작업 모드**로 부른다:
 ```
-Agent(subagent_type: "worker", prompt: "모드: 재작업\nchange 이름: <이름>\nstore: <id>\n브랜치: <이름>\n담당 작업: 아래 항목만\n재작업: 예\n\n고쳐야 할 막음 항목:\n1. <reviewer가 쓴 그대로>\n2. <regression-verifier가 쓴 그대로>\n\n되돌릴 체크 항목: 2.3, 4.1\n\n이미 통과한 작업은 다시 만지지 마라.")
+Agent(subagent_type: "sdd:worker", prompt: "모드: 재작업\nchange 이름: <이름>\nstore: <id>\n브랜치: <이름>\n담당 작업: 아래 항목만\n재작업: 예\n\n고쳐야 할 막음 항목:\n1. <reviewer가 쓴 그대로>\n2. <regression-verifier가 쓴 그대로>\n\n되돌릴 체크 항목: 2.3, 4.1\n\n이미 통과한 작업은 다시 만지지 마라.")
 ```
 - **`재작업: 예`를 반드시 넣는다.** 이게 없으면 worker가 작업 목록이 전부 `[x]`인 것을 보고
   "다 끝났습니다, archive 하시죠"라고 축하하며 돌아온다. 루프가 아예 안 돈다.
@@ -342,7 +348,7 @@ preparer의 요구사항 정리이고, 그 사이에
 - 사용자가 "알아서 해"라고 했으면 **이후로는 알리기만 하고 묻지 않는다.**
 
 ```
-Agent(subagent_type: "finalizer", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\n만진 파일:\n<목록>\nreviewer 판정: <RESULT 첫 줄>\nregression 판정: <RESULT 첫 줄 / 생략(작은 작업) / 생략(테스트 명령 없음) / 생략(실행 코드 변경 없음)>\n조건: <조건부 통과였으면 그 내용>\npush: 하지 마라\n\nreview.md에서 판정을 직접 확인한 뒤, spec을 먼저 갱신하고 그 다음 커밋하라.")
+Agent(subagent_type: "sdd:finalizer", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\n만진 파일:\n<목록>\nreviewer 판정: <RESULT 첫 줄>\nregression 판정: <RESULT 첫 줄 / 생략(작은 작업) / 생략(테스트 명령 없음) / 생략(실행 코드 변경 없음)>\n조건: <조건부 통과였으면 그 내용>\npush: 하지 마라\n\nreview.md에서 판정을 직접 확인한 뒤, spec을 먼저 갱신하고 그 다음 커밋하라.")
 ```
 - **`regression 판정:` 줄은 빼지 마라.** regression-verifier를 안 불렀으면 `생략(<이유>)`을 글자로 적는다.
   줄이 아예 없으면 finalizer가 "회귀 검증 안 거침"으로 멈춘다. 실행 코드 여부는 worker의 만진 파일 목록으로 판단한다.
@@ -356,12 +362,12 @@ Agent(subagent_type: "finalizer", prompt: "change 이름: <이름>\nstore: <id>\
   `archive: 해도 됨`을 넣는다 (`push: 해도 됨`과 같은 방식). 이게 승인을 전달하는 유일한 통로다 —
   없으면 finalizer는 조사만 하고 진행하지 않는다.
   change 이름은 **글자 그대로** 적는다. "알아서 정리해라"는 보내지 마라.
-  커밋이 끝나면 정리(archive)할지 한 번 권해라. 안 하면 `openspec list`에 활성(`complete 18/18`)으로 남아
+  커밋이 끝나면 정리(archive)할지 한 번 권해라. 안 하면 `sdd-openspec list`에 활성(`complete 18/18`)으로 남아
   다음 작업의 preparer가 "겹치는 진행 중 change"로 올리고 매번 "먼저 끝낼까요, 병행할까요"를 묻게 된다.
 
   이미 커밋이 끝난 change를 나중에 archive만 할 때:
   ```
-  Agent(subagent_type: "finalizer", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\narchive: 해도 됨\npush: 하지 마라\n\n이 change를 archive하라.")
+  Agent(subagent_type: "sdd:finalizer", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\narchive: 해도 됨\npush: 하지 마라\n\n이 change를 archive하라.")
   ```
 
 ---
@@ -373,13 +379,13 @@ Agent(subagent_type: "finalizer", prompt: "change 이름: <이름>\nstore: <id>\
 worker가 "설계에 구멍이 있다"고 돌아오거나, 사용자가 중간에 결정을 바꾸면
 → **designer를 다시 부른다.** 산출물을 네가 고치지 마라.
 ```
-Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n이미 산출물이 있다. 고쳐야 한다.\n바뀐 사실: <worker 보고 또는 사용자 결정>\n\n이미 있는 산출물을 고치는 절차대로 산출물을 앞뒤 맞게 갱신하라. decision.md의 채택안도 함께 갱신하라.")
+Agent(subagent_type: "sdd:designer", prompt: "change 이름: <이름>\nstore: <id>\n이미 산출물이 있다. 고쳐야 한다.\n바뀐 사실: <worker 보고 또는 사용자 결정>\n\n이미 있는 산출물을 고치는 절차대로 산출물을 앞뒤 맞게 갱신하라. decision.md의 채택안도 함께 갱신하라.")
 ```
 
 **작은 작업에서 올라올 때:** 작은 작업 경로의 worker가 설계 구멍(`RESULT: 구현막힘` + 설계 문제)을 들고
 오거나 사용자가 중간에 분석을 요청하면, 그 change를 **큰 작업으로 올려** designer를 부른다:
 ```
-Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\nanalyzer 생략: 예\n채택안: 없음 — proposal의 받아들일 조건이 기준\n작은 작업에서 올라왔다. preparer가 쓴 tasks.md(와 델타)가 이미 있다.\n바뀐 사실: <worker 보고>\n\n이미 있는 산출물을 고치는 절차로 이어받아 큰 작업 산출물을 갖춰라.")
+Agent(subagent_type: "sdd:designer", prompt: "change 이름: <이름>\nstore: <id>\n브랜치: <이름>\nanalyzer 생략: 예\n채택안: 없음 — proposal의 받아들일 조건이 기준\n작은 작업에서 올라왔다. preparer가 쓴 tasks.md(와 델타)가 이미 있다.\n바뀐 사실: <worker 보고>\n\n이미 있는 산출물을 고치는 절차로 이어받아 큰 작업 산출물을 갖춰라.")
 ```
 분석 요청으로 올렸으면 analyzer → ★선택 → 4단계 ② 프롬프트(`사용자가 고른 안:`)에 같은 "이미 있다" 줄을 더한다.
 올린 뒤로는 큰 작업 경로(5단계 이후)를 그대로 탄다.
@@ -398,7 +404,7 @@ Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n
    - ① **여기까지 보존** → finalizer에게 `모드: WIP 커밋`으로 지시.
      finalizer가 spec 갱신 없이 `WIP:` 제목으로 커밋하고 막음 항목을 커밋 메시지에 남긴다
      ```
-     Agent(subagent_type: "finalizer", prompt: "모드: WIP 커밋\nchange 이름: <이름>\nstore: <id>\n브랜치: <이름>\n만진 파일:\n<목록>\npush: 하지 마라\n\n반려 상태다. spec 갱신 없이 WIP 커밋만 하고 막음 항목을 커밋 메시지에 남겨라.")
+     Agent(subagent_type: "sdd:finalizer", prompt: "모드: WIP 커밋\nchange 이름: <이름>\nstore: <id>\n브랜치: <이름>\n만진 파일:\n<목록>\npush: 하지 마라\n\n반려 상태다. spec 갱신 없이 WIP 커밋만 하고 막음 항목을 커밋 메시지에 남겨라.")
      ```
    - ② **설계가 틀린 것 같다** → designer 재호출
    - ③ **전부 버린다** → 아래 "취소" 절차
@@ -411,7 +417,7 @@ Agent(subagent_type: "designer", prompt: "change 이름: <이름>\nstore: <id>\n
 2. `AskUserQuestion`으로 묻는다: **남겨둘까 / 지울까 / 나중에 이어갈까**
 3. **"지운다"** → worker를 불러 처리한다. 네가 지우지 마라.
    ```
-   Agent(subagent_type: "worker", prompt: "모드: 정리\nchangeRoot: <openspec status에서 얻은 실제 경로>\n브랜치: <이름>\n\n1. <changeRoot> 디렉터리를 삭제하라.\n2. 되돌릴 코드 파일: <경로를 글자 그대로 나열. 없으면 '없음'>\n3. 브랜치 <이름>: <남긴다 / 삭제한다>")
+   Agent(subagent_type: "sdd:worker", prompt: "모드: 정리\nchangeRoot: <sdd-openspec status에서 얻은 실제 경로>\n브랜치: <이름>\n\n1. <changeRoot> 디렉터리를 삭제하라.\n2. 되돌릴 코드 파일: <경로를 글자 그대로 나열. 없으면 '없음'>\n3. 브랜치 <이름>: <남긴다 / 삭제한다>")
    ```
    코드 변경이 있었으면 **되돌릴 범위를 먼저 사용자에게 확인한다.**
 4. **"나중에"** → worker에게 proposal.md 맨 위에 `> 보류: <날짜> <이유>` 한 줄을 남기게 한다.

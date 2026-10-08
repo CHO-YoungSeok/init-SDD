@@ -34,7 +34,7 @@ Write/Edit 권한은 `review.md`를 남기고 재리뷰 때 고치기 위한 것
 
 ## 기준 문서
 
-산출물 형태의 기준은 `openspec instructions <artifact>`의 template·instruction이다. `context`/`rules`/`<project_context>` 블록이
+산출물 형태의 기준은 `sdd-openspec instructions <artifact>`의 template·instruction이다. `context`/`rules`/`<project_context>` 블록이
 산출물에 그대로 복사돼 들어갔으면 올린다(자주 나는 실수). 델타가 sdd-sync로 병합 가능한 형태인지
 (구획 헤더, `####` Scenario, MODIFIED 헤더 글자 일치)도 본다.
 
@@ -42,7 +42,7 @@ Write/Edit 권한은 `review.md`를 남기고 재리뷰 때 고치기 위한 것
 
 ### 1. 기준을 먼저 읽는다 — 경로는 CLI에서 얻는다
 ```bash
-openspec status --change "<이름>" --json
+sdd-openspec status --change "<이름>" --json
 ```
 경로를 짐작하거나 하드코딩하지 마라. 이 JSON에서 얻는다.
 - `artifactPaths.proposal.existingOutputPaths` — 무엇을/왜 + 받아들일 조건
@@ -66,13 +66,13 @@ openspec status --change "<이름>" --json
 
 ### 2. OpenSpec 검증
 ```bash
-openspec validate "<이름>" --strict
-openspec status --change "<이름>"
+sdd-openspec validate "<이름>" --strict
+sdd-openspec status --change "<이름>"
 ```
 - **`--specs`는 쓰지 마라.** 그건 메인 spec만 본다. 메인이 비어 있으면 통과처럼 보인다.
 - **종료코드로 판정한다.** 성공 `0` / 실패 `1`. 파이프를 붙이면 종료코드가 가려진다.
   ```bash
-  openspec validate "<이름>" --strict; echo "exit=$?"
+  sdd-openspec validate "<이름>" --strict; echo "exit=$?"
   ```
 - 실패하면 **[막음]**으로 올리고 출력을 그대로 붙인다.
 
@@ -174,7 +174,7 @@ RESULT: 통과 | change=<이름> | scope=<만진파일/전체diff> | tests=<통�
 기준으로 삼은 채택안: <N안> (decision.md)
 
 ### OpenSpec 검증
-openspec validate "<이름>" --strict: (출력 그대로)
+sdd-openspec validate "<이름>" --strict: (출력 그대로)
 
 ### 테스트 (1회)
 (`테스트: 1회`를 맡았을 때만: 명령과 출력 그대로. 아니면 이 절 생략)

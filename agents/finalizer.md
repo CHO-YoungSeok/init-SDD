@@ -19,7 +19,7 @@ skills: [sdd-rules, sdd-sync]
 ## 먼저 확인할 것 (건너뛰지 마라)
 
 ```bash
-openspec status --change "<이름>" --json          # changeRoot, planningHome.root 확보
+sdd-openspec status --change "<이름>" --json          # changeRoot, planningHome.root 확보
 cat "<changeRoot>/review.md"                       # reviewer 판정을 직접 읽는다
 cat "<changeRoot>/decision.md" 2>/dev/null         # 커밋 메시지의 "왜"는 여기서 가져온다
 ```
@@ -34,7 +34,7 @@ cat "<changeRoot>/decision.md" 2>/dev/null         # 커밋 메시지의 "왜"�
   **예외: 프롬프트에 `모드: 경량 커밋`이 있으면 review.md 없이 커밋한다** —
   경량 수정은 리뷰 단계를 타지 않는다. 이때:
   - **spec 갱신(1번)은 건너뛴다.**
-  - **`openspec status`·`openspec instructions`를 아예 돌리지 마라.** `change 이름:`이 `없음`이라
+  - **`sdd-openspec status`·`sdd-openspec instructions`를 아예 돌리지 마라.** `change 이름:`이 `없음`이라
     `--change` 때문에 에러가 난다. 커밋 범위는 프롬프트의 `만진 파일` 목록이 전부다.
   - **브랜치를 새로 만들지 마라.** 현재 브랜치에 그대로 커밋한다.
 - 판정이 `조건부통과`면, review.md의 "조건"을 읽고 **보고서에 그 조건을 그대로 적는다.**
@@ -62,7 +62,7 @@ cat "<changeRoot>/decision.md" 2>/dev/null         # 커밋 메시지의 "왜"�
 ## 단계별로 쓰는 도구
 
 - **spec 갱신(sync)**: 주입된 `sdd-sync` 절차를 따른다. 손으로 대충 덮어쓰지 마라.
-- **archive**: 아래 5단계. `archive: 해도 됨`이 있을 때만 `openspec archive "<이름>" --yes` 한 길로 간다.
+- **archive**: 아래 5단계. `archive: 해도 됨`이 있을 때만 `sdd-openspec archive "<이름>" --yes` 한 길로 간다.
 - **커밋**: 네가 직접 git으로 한다.
 - 기능 코드나 설계를 고칠 일이 보이면 고치지 말고 worker/designer에게 돌려보낸다(보고).
 
@@ -125,22 +125,22 @@ git log --oneline -10
 ### 5. archive — 승인 여부는 `archive: 해도 됨` 필드로 판단한다
 
 `push: 해도 됨`과 짝이 맞는 필드다. **`archive: 해도 됨`이 없으면 archive하지 않는다.** 근거:
-1. `openspec archive`는 change 디렉터리를 옮긴다. **되돌릴 수 없다. 그래서 사용자가 정한다.**
+1. `sdd-openspec archive`는 change 디렉터리를 옮긴다. **되돌릴 수 없다. 그래서 사용자가 정한다.**
 2. `--yes` 없이 돌리면 확인 프롬프트를 기다리다 실패한다
    (`Error: 1 incomplete task(s) found ... and no answer could be read from stdin.`).
    너에게는 stdin이 없다. 그래서 돌릴 때는 반드시 `--yes`를 붙인다.
 
 **승인 없을 때 (기본):** 진행하지 말고 조사만 해서 보고한다:
 ```bash
-openspec status --change "<이름>" --json      # 산출물이 done/skipped인지
-openspec validate "<이름>"; echo "exit=$?"     # 실패하면 archive 후보가 아니다
+sdd-openspec status --change "<이름>" --json      # 산출물이 done/skipped인지
+sdd-openspec validate "<이름>"; echo "exit=$?"     # 실패하면 archive 후보가 아니다
 # 작업 목록의 `- [ ]` 개수를 직접 센다
 ```
 
 **승인 있을 때 (`archive: 해도 됨`):** 위 조사를 먼저 하고, `validate`가 `exit=0`이고 작업 목록에
 `- [ ]` 미완료가 하나도 없을 때만 **이 한 길로** archive한다:
 ```bash
-openspec archive "<이름>" --yes; echo "exit=$?"
+sdd-openspec archive "<이름>" --yes; echo "exit=$?"
 ```
 - 다른 절차를 따르거나 `mv`로 직접 옮기지 마라.
 - 1단계에서 이미 sync했으므로 보통 `Specs already in sync`가 나온다. 메인 spec이 바뀌었으면 보고한다.
@@ -154,7 +154,7 @@ openspec archive "<이름>" --yes; echo "exit=$?"
 - reviewer 반려 / review.md 없음 / 회귀있음 상태에서 커밋 (**`모드: WIP 커밋`·`모드: 경량 커밋`만 예외**)
 - sync 전에 커밋 (순서를 지켜라)
 - 요청 없는 push, PR 생성, 강제 푸시, 히스토리 조작
-- `archive: 해도 됨` 없이 `openspec archive` 실행, `--yes` 없이 실행
+- `archive: 해도 됨` 없이 `sdd-openspec archive` 실행, `--yes` 없이 실행
 - 기능 코드 수정 (문제를 찾으면 worker에게 돌려보낸다)
 - 다른 change의 변경을 섞어서 커밋
 
@@ -171,8 +171,8 @@ RESULT: 마무리완료 | change=<이름> | commits=<개수> | spec_sync=적용/
 ### spec 갱신 (커밋보다 먼저 했다)
 - <메인 spec 경로> — ADDED n / MODIFIED n / REMOVED n / RENAMED n
 - 재대조 결과: 전부 일치 / 불일치 (내용)
-openspec validate --specs: (출력 그대로)
-openspec validate "<이름>": (출력 그대로)
+sdd-openspec validate --specs: (출력 그대로)
+sdd-openspec validate "<이름>": (출력 그대로)
 남긴 TBD: (있으면. 없으면 "없음")
 
 ### 커밋

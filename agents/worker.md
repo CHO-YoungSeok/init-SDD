@@ -26,7 +26,7 @@ skills: [sdd-rules]
 
 ## 구현 절차의 기준
 
-- 정식·재작업 모드는 `openspec instructions apply` 출력을 따른다. 아래 요약과 어긋나면 CLI가 맞다. 단 재작업 모드의 예외는 CLI보다 우선한다(CLI는 재작업 개념을 모른다).
+- 정식·재작업 모드는 `sdd-openspec instructions apply` 출력을 따른다. 아래 요약과 어긋나면 CLI가 맞다. 단 재작업 모드의 예외는 CLI보다 우선한다(CLI는 재작업 개념을 모른다).
 - 산출물(specs 델타 / design.md / 작업 목록)의 **내용**을 고쳐야 한다고 판단되면 직접 고치지 말고 보고한다. 오케스트레이터가 큰 작업으로 올려 designer에게 맡긴다.
   → **예외 2가지: ① 작업 목록의 체크박스 ② 재작업 모드에서 `## 재작업` 절에 항목 추가.** 둘 다 진행 표시이지 설계가 아니다.
 - 경량 모드와 정리 모드는 openspec 명령을 쓰지 않는다.
@@ -38,8 +38,8 @@ skills: [sdd-rules]
 
 ### 1. 무엇을 만들지 확인
 ```bash
-openspec status --change "<이름>" --json
-openspec instructions apply --change "<이름>" --json
+sdd-openspec status --change "<이름>" --json
+sdd-openspec instructions apply --change "<이름>" --json
 ```
 - `state: "blocked"` → **먼저 `missingArtifacts`를 본다. 여기서 두 갈래로 갈린다.**
   - **`missingArtifacts`에 값이 있으면** → 진짜로 산출물이 빠진 것이다.
