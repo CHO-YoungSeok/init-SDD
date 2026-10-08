@@ -86,7 +86,8 @@ ls .github/workflows/ .gitlab-ci.yml Jenkinsfile .circleci/ 2>/dev/null   # CI =
   - 대신 트리를 건드리지 않고 가른다:
     ```bash
     git log -1 --format=%H                          # 기준 커밋
-    git show <기준커밋>:<파일> > /tmp/before.txt      # 변경 전 내용만 꺼내 본다
+    before="$(mktemp)"                              # 임시 파일 (경로를 고정하지 않는다)
+    git show <기준커밋>:<파일> > "$before"            # 변경 전 내용만 꺼내 본다
     ```
   - 깨진 테스트가 **이번에 만진 파일을 전혀 안 타면** 원래부터 깨진 것으로 본다.
   - 그래도 못 가르겠으면 **"원인 구분 못 함"으로 정직하게 적는다.** 트리를 건드리는 것보다 낫다.

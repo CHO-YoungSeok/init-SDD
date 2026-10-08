@@ -51,10 +51,11 @@ Claude Code에게 큰 일을 그냥 맡기면, 분석과 설계와 구현이 한
 ### 방법 1 — install.sh (권장)
 
 ```bash
-git clone --depth 1 https://github.com/CHO-YoungSeok/init-SDD.git /tmp/init-SDD
+SDD_SRC="$(mktemp -d)/init-SDD"              # 받을 임시 폴더 (매번 새로 만든다)
+git clone --depth 1 https://github.com/CHO-YoungSeok/init-SDD.git "$SDD_SRC"
 cd /path/to/your-project
-bash /tmp/init-SDD/install.sh --dry-run     # 무엇을 할지 먼저 본다
-bash /tmp/init-SDD/install.sh               # 설치
+bash "$SDD_SRC/install.sh" --dry-run         # 무엇을 할지 먼저 본다
+bash "$SDD_SRC/install.sh"                   # 설치
 ```
 
 그 다음 Claude Code를 **새 세션으로** 다시 연다. 그래야 새 에이전트와 스킬이 잡힌다.
@@ -70,24 +71,28 @@ bash /tmp/init-SDD/install.sh               # 설치
 ### 방법 2 — 손으로
 
 ```bash
+SDD_SRC="$(mktemp -d)/init-SDD"              # 받을 임시 폴더
+git clone --depth 1 https://github.com/CHO-YoungSeok/init-SDD.git "$SDD_SRC"
 cd /path/to/your-project
 
 # OpenSpec 초기화 (openspec/ 디렉터리와 공식 스킬 6개 + /opsx 명령 6개를 만든다)
 openspec init --tools claude          # 산출물 언어를 정하려면 --language ko (또는 en)
 
 # 에이전트와 지휘 스킬, 모델 등급 스킬 복사
-cp -r /tmp/init-SDD/.claude/agents .claude/
-cp -r /tmp/init-SDD/.claude/skills/orchestra .claude/skills/
-cp -r /tmp/init-SDD/.claude/skills/agent-model-tier .claude/skills/
-cp /tmp/init-SDD/.claude/settings.json .claude/      # 권한 프롬프트를 줄인다. 이미 있으면 내용을 확인하고 옮겨라
+cp -r "$SDD_SRC"/.claude/agents .claude/
+cp -r "$SDD_SRC"/.claude/skills/orchestra .claude/skills/
+cp -r "$SDD_SRC"/.claude/skills/agent-model-tier .claude/skills/
+cp "$SDD_SRC"/.claude/settings.json .claude/      # 권한 프롬프트를 줄인다. 이미 있으면 내용을 확인하고 옮겨라
 ```
 
 > **`.claude/skills/openspec-*` 와 `.claude/commands/opsx/` 는 이 저장소에 git으로
 > 커밋돼 있지 않다.** `openspec init`이 네 CLI 버전에 맞춰 만들어 주는 파일이라 추적하지
-> 않는다(`.gitignore` 참고). 로컬 디스크에는 남아 있을 수 있지만 그건 이 저장소를 마지막에
-> `openspec init`한 사람의 CLI 버전에 맞춰진 것일 뿐이다. 그대로 복사하지 말고, 대상
-> 프로젝트에서 `openspec init --tools claude`를 직접 돌려서 네 CLI 버전에 맞는 걸 새로
-> 만들어라.
+> 않는다(`.gitignore` 참고). 그래서 clone한 사본에는 **없고**, 이미 있던 작업 폴더에서도
+> 사라질 수 있다. 없어졌으면 `openspec init --tools claude`로 다시 만든다.
+> `openspec update`로는 복구되지 않는다 — 스킬 폴더가 없으면 `No configured tools found.`만
+> 출력하고 아무것도 만들지 않는다 (종료코드는 0이라 성공처럼 보이니 주의).
+> 대상 프로젝트에서도 복사하지 말고 `openspec init --tools claude`를 직접 돌려서 네 CLI
+> 버전에 맞는 걸 새로 만들어라.
 
 ### CLAUDE.md 는 복사하지 말고 **합쳐라**
 
@@ -96,7 +101,7 @@ cp /tmp/init-SDD/.claude/settings.json .claude/      # 권한 프롬프트를 �
 (`install.sh` 를 쓰면 알아서 해준다)
 
 ```bash
-sed -n '/init-SDD:begin/,/init-SDD:end/p' /tmp/init-SDD/CLAUDE.md >> CLAUDE.md
+sed -n '/init-SDD:begin/,/init-SDD:end/p' "$SDD_SRC"/CLAUDE.md >> CLAUDE.md   # 방법 2와 같은 터미널에서
 ```
 
 ### 이름이 겹칠 수 있는 파일

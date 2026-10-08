@@ -80,7 +80,7 @@ worker는 `모드: 재작업`으로, finalizer는 "커밋 여부를 먼저 확�
 | 단계 | 따르는 절차 문서 | 하는 일 |
 |---|---|---|
 | preparer | `openspec-explore` + `openspec-propose`(읽기만, proposal만 작성) | 브랜치 + change 생성 + proposal |
-| analyzer | `openspec-explore` | 분석 + 방안 3가지 (산출물 안 씀) — **요청했을 때만 부른다** |
+| analyzer | `openspec-explore` | 분석 + 방안 3가지 → `analysis.md` (그 밖의 산출물은 안 씀) — **요청했을 때만 부른다** |
 | designer | `openspec-propose` / 고칠 때는 **`openspec-update-change`** | decision.md + specs 델타 + design.md + tasks.md |
 | worker | **`openspec-apply-change`** | 구현 + 작업 체크 |
 | reviewer | 없음 (기준 확인용으로만 읽음) | 요구사항/설계 준수 검증 + review.md |

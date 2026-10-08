@@ -287,7 +287,8 @@ git -C "$대상" ls-files --error-unmatch CLAUDE.md >/dev/null 2>&1   # 종료�
 git -C "$대상" update-index --no-skip-worktree CLAUDE.md
 
 # 2) 조각 구획을 떼어 따로 보관한다 (또는 git stash)
-sed -n '/<!-- init-SDD:begin -->/,/<!-- init-SDD:end -->/p' "$대상/CLAUDE.md" > /tmp/init-sdd-snippet.txt
+SNIP="$(mktemp)"   # 4) 단계까지 같은 터미널에서 이어서 한다
+sed -n '/<!-- init-SDD:begin -->/,/<!-- init-SDD:end -->/p' "$대상/CLAUDE.md" > "$SNIP"
 TMP="$(mktemp)"
 awk '
   /<!-- init-SDD:begin -->/ { inblk=1 }
@@ -302,7 +303,7 @@ git -C "$대상" pull
 # 4) 조각을 다시 끝에 붙인다
 TMP="$(mktemp)"
 cat "$대상/CLAUDE.md" > "$TMP"
-printf '\n\n%s\n' "$(cat /tmp/init-sdd-snippet.txt)" >> "$TMP"
+printf '\n\n%s\n' "$(cat "$SNIP")" >> "$TMP"
 mv "$TMP" "$대상/CLAUDE.md"
 
 # 5) 재적용

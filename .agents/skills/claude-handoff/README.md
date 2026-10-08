@@ -1,5 +1,7 @@
 # Claude Handoff Skill for Antigravity (agy)
 
+> 이 디렉터리는 Antigravity(agy)용 스킬이며 이 저장소의 SDD 파이프라인과 무관하다. SDD 설치 대상이 아니다.
+
 Claude Code에서 작업하던 대화 맥락과 진행 상태를 로컬 파일시스템에서 자동으로 찾아 Antigravity(agy)로 매끄럽게 인계받는 커스텀 스킬입니다.
 
 ## 📁 파일 구조
