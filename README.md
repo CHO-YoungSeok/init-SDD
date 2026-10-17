@@ -205,7 +205,7 @@ claude plugin update sdd@sdd-marketplace
 
 > **주의: 줄 맨 앞에(들여쓰기 없이) 새로 적어라.** 예시 주석에서 `#` 만 지우면 들여쓰기가 남아
 > YAML이 깨지고, openspec은 **경고만 내고 그 파일을 통째로 무시한다**(종료코드는 0이라 눈치채기 어렵다).
-> 적은 뒤 `openspec context` 를 돌려 `Warning` 이 없는지 확인해라.
+> 적은 뒤 `sdd-openspec context` 를 돌려 `Warning` 이 없는지 확인해라.
 
 ```yaml
 context: |
