@@ -48,10 +48,9 @@ git 사용자 이름. 이메일은 넣지 않는다(SHALL).
 스킬 4개(`orchestra`, `sdd-rules`, `sdd-sync`, `init`)는 `skills/<이름>/SKILL.md`, SessionStart 훅은
 `hooks/hooks.json`, 실행 파일은 `bin/`.
 
-서브에이전트와 위 세 스킬(`orchestra`, `sdd-rules`, `sdd-sync`)은 `.claude/agents/`·`.claude/skills/`에
-더는 있어서는 안 된다(MUST NOT) — 같은 지시문이 두 벌이 되면 갈라진다. `init-sdd` 스킬은 플러그인에 넣지
-않고 `.claude/skills/init-sdd/`에 남는다(SHALL, `distribution/init-sdd-skill`). 없어진 모델 등급 스킬은
-어디에도 없어야 한다(MUST NOT).
+서브에이전트와 스킬은 `.claude/agents/`·`.claude/skills/`에 있어서는 안 된다(MUST NOT) — 같은 지시문이
+두 벌이 되면 갈라진다. 이 저장소가 `.claude/` 아래에 추적하는 파일은 프로젝트 지침 `.claude/CLAUDE.md`와
+개발 권한 `.claude/settings.json` 둘뿐이어야 한다(SHALL). 없어진 모델 등급 스킬은 어디에도 없어야 한다(MUST NOT).
 
 #### Scenario: 새 프로세스가 에이전트와 스킬을 접두사와 함께 싣는다
 
@@ -63,42 +62,15 @@ git 사용자 이름. 이메일은 넣지 않는다(SHALL).
 
 #### Scenario: 옛 위치가 비었다
 
-- **WHEN** 저장소에서 `.claude/agents/`와 `.claude/skills/{orchestra,sdd-rules,sdd-sync}/`를 찾고, `.claude/skills/`와 `skills/` 아래 디렉터리 목록을 본다
+- **WHEN** 저장소에서 `.claude/agents/`와 `.claude/skills/{orchestra,sdd-rules,sdd-sync}/`를 찾고, `git ls-files .claude`와 `skills/` 아래 디렉터리 목록을 본다
 - **THEN** 앞의 네 경로가 없다
-- **AND** `.claude/skills/` 아래 추적되는 스킬은 `init-sdd`뿐이다 (gitignore 대상인 `openspec-*`는 세지 않는다)
+- **AND** `git ls-files .claude`의 결과가 `.claude/CLAUDE.md`와 `.claude/settings.json` 두 줄뿐이다 (gitignore 대상인 `openspec-*` 스캐폴드는 추적되지 않으니 나오지 않는다)
 - **AND** `skills/` 아래는 `orchestra`, `sdd-rules`, `sdd-sync`, `init` 네 개뿐이다
-
-### Requirement: 에이전트는 sdd 접두사 이름으로 부르고 접두사 없는 이름으로 대비해야 한다
-
-플러그인으로 실린 에이전트는 `sdd:<이름>`으로만 풀린다(실측). 그래서 orchestra 스킬의 모든 서브에이전트
-호출 예시는 `subagent_type: "sdd:<이름>"`이어야 한다(SHALL).
-
-기존 설치본(`install.sh`, `init-sdd`)의 에이전트는 접두사 없이 실리므로 **대비 규칙**을 두어야
-한다(SHALL): `sdd:<이름>`이 `not found`이면 같은 프롬프트로 `<이름>`을 다시 부른다. 이 규칙은 orchestra
-스킬과 sdd-rules 스킬에 한 번씩만 있어야 한다(MUST). 기존 설치 방식을 없애는 change에서 함께 지운다는
-말을 규칙 옆에 적는다(SHALL).
-
-#### Scenario: orchestra의 호출 이름이 모두 접두사를 가진다
-
-- **WHEN** `grep -n 'subagent_type: "' skills/orchestra/SKILL.md`를 돌린다
-- **THEN** 나온 모든 줄의 이름이 `sdd:`로 시작한다
-
-#### Scenario: 대비 규칙이 두 곳에 한 번씩 있다
-
-- **WHEN** orchestra 스킬과 sdd-rules 스킬에서 `not found`를 다루는 문장을 찾는다
-- **THEN** 두 파일에 각각 "접두사 없이 다시 부른다"는 규칙이 한 번씩 있다
-- **AND** 기존 설치 방식을 없앨 때 함께 지운다는 말이 붙어 있다
-
-#### Scenario: 기존 설치본에서 대비 규칙이 동작한다
-
-- **WHEN** `install.sh`로 설치한 임시 프로젝트에서 플러그인 없이 새 `claude -p "<프롬프트>" --allowedTools "Agent"` 프로세스를 띄우고, `sdd:code-explorer`를 부른 뒤 대비 규칙을 따르라고 지시한다
-- **THEN** 첫 호출은 `not found`이고 두 번째 호출이 `code-explorer`로 실제로 뜬다
 
 ### Requirement: 에이전트 frontmatter의 skills 항목은 접두사 없는 이름을 써야 한다
 
 에이전트 frontmatter `skills:`는 접두사 없는 `sdd-rules`, `sdd-sync`를 써야 한다(SHALL). 플러그인
-안에서도 접두사 없는 이름이 주입되고(실측), 기존 설치본(`.claude/skills/`)에서도 같은 글자로
-동작한다.
+안에서는 접두사 없는 이름이 주입된다(실측).
 
 #### Scenario: skills 줄에 접두사가 없다
 
@@ -113,15 +85,20 @@ git 사용자 이름. 이메일은 넣지 않는다(SHALL).
 이름으로 설치된 플러그인보다 우선한다(실측).
 
 `README.md`는 이 개발용 실행법을 적어야 하고(MUST), 이 저장소의 프로젝트 지침 파일 `.claude/CLAUDE.md`는
-개발자용 안내(이 실행법과 "이 저장소도 SDD로 개발한다")를 담아야 한다(SHALL). `.claude/CLAUDE.md`의
-`<!-- init-SDD:begin -->` ~ `<!-- init-SDD:end -->` 구획은 기존 설치 방식이 뽑아 쓰는 조각 원본이므로
-남아야 한다(MUST).
+개발자용 안내(이 실행법과 "이 저장소도 SDD로 개발한다")와 지휘 지침(작업 방식)을 담아야 한다(SHALL).
+`.claude/CLAUDE.md`에는 다른 프로젝트로 뽑아 붙이기 위한 구획 표식 주석이 있어서는 안 된다(MUST NOT).
 
 #### Scenario: 개발용 실행법이 적혀 있다
 
 - **WHEN** `README.md`와 `.claude/CLAUDE.md`에서 `claude --plugin-dir .`를 찾는다
 - **THEN** 두 파일에 모두 있다
-- **AND** `.claude/CLAUDE.md`에 `<!-- init-SDD:begin -->`와 `<!-- init-SDD:end -->`가 각각 한 번씩 있다
+
+#### Scenario: 지휘 지침이 표식 없이 남아 있다
+
+- **WHEN** `.claude/CLAUDE.md`를 읽고 `grep -cE 'init-SDD:(begin|end)' .claude/CLAUDE.md`를 돌린다
+- **THEN** grep 결과가 `0`이다
+- **AND** "이 저장소도 SDD로 개발한다"와, 메인 세션은 오케스트레이터로서 지휘만 하고 서브에이전트에게 위임한다는 지휘 지침이 있다
+- **AND** 기본(작은 작업)·큰 작업 두 파이프라인 순서 줄과 `code-explorer` 예외, analyzer는 요청할 때만 부른다는 문장이 있다
 
 ### Requirement: 프로젝트 지침 파일은 플러그인 루트가 아닌 .claude/CLAUDE.md에 두어야 한다
 
@@ -169,18 +146,66 @@ git 사용자 이름. 이메일은 넣지 않는다(SHALL).
 - **THEN** `.gitignore`에 `evals/results/` 줄이 있다
 - **AND** `claude plugin eval`이 `evals/`의 사례 이름을 인식했는지에 대한 확인 결과가 있다
 
-### Requirement: README는 플러그인 설치와 이전 안내를 담아야 한다
+### Requirement: 에이전트는 sdd 접두사 이름으로 불러야 한다
 
-`README.md`는 다음을 담아야 한다(MUST):
-- 플러그인 설치 두 줄(`/plugin marketplace add <owner/repo 또는 경로>`, `/plugin install sdd@sdd-marketplace`)
+플러그인으로 실린 에이전트는 `sdd:<이름>`으로만 풀린다(실측). 그래서 orchestra 스킬의 모든 서브에이전트
+호출 예시는 `subagent_type: "sdd:<이름>"`이어야 한다(SHALL).
+
+설치 수단은 플러그인 하나뿐이므로, `sdd:<이름>`이 `not found`일 때 접두사 없는 `<이름>`으로 다시 부르는
+대비 규칙을 orchestra 스킬과 sdd-rules 스킬 어디에도 두어서는 안 된다(MUST NOT).
+
+#### Scenario: orchestra의 호출 이름이 모두 접두사를 가진다
+
+- **WHEN** `grep -n 'subagent_type: "' skills/orchestra/SKILL.md`를 돌린다
+- **THEN** 나온 모든 줄의 이름이 `sdd:`로 시작한다
+
+#### Scenario: 대비 규칙이 없다
+
+- **WHEN** `grep -n 'not found' skills/orchestra/SKILL.md skills/sdd-rules/SKILL.md`를 돌린다
+- **THEN** 결과가 0건이다
+- **AND** 두 파일에 "접두사 없는 이름으로 다시 부른다"는 규칙이 없다
+
+### Requirement: README는 플러그인 설치를 한 길로 안내해야 한다
+
+설치 절차는 `README.md` 한 곳에만 서술되어야 한다(SHALL). `README.md`는 다음을 담아야 한다(MUST):
+- 플러그인 설치 두 줄. `/plugin marketplace add <owner/repo 또는 경로>`와 `/plugin install sdd@sdd-marketplace`는
+  각각 다른 코드블록에 한 줄씩 둔다(SHALL) — 한 블록에 두 줄을 넣으면 한 번에 붙여 넣어 첫 줄만 돈다.
 - 새 프로젝트에서 한 번 실행하는 `/sdd:init`
-- 기존 방식(`install.sh`, `init-sdd`)에서 플러그인으로 옮기는 안내
-- `openspec init`이 까는 스캐폴드(`.claude/commands/opsx/`, `.claude/skills/openspec-*`)가 이 파이프라인에
-  필요 없다는 안내
+- `openspec init`이 까는 스캐폴드(`.claude/commands/opsx/`, `.claude/skills/openspec-*`)가 필요 없다는 안내
 
-#### Scenario: README에 플러그인 안내 네 가지가 있다
+플러그인 밖의 다른 설치 방식이나 그 이전 안내를 담아서는 안 된다(MUST NOT).
+
+#### Scenario: 설치 두 줄이 코드블록 두 개로 나뉘어 있다
+
+- **WHEN** `README.md`의 "빠른 시작" 절과 "플러그인으로 설치" 절을 읽는다
+- **THEN** 두 절 각각에서 `/plugin marketplace add`와 `/plugin install sdd@sdd-marketplace`가 서로 다른 코드블록에 있고, 각 코드블록은 그 한 줄만 담는다
+- **AND** `/sdd:init`이 그 뒤에 나온다
+
+#### Scenario: 스캐폴드가 필요 없다는 안내가 있다
 
 - **WHEN** `README.md`를 읽는다
-- **THEN** `/plugin marketplace add`와 `/plugin install sdd@sdd-marketplace`가 있다
-- **AND** `/sdd:init`과 기존 방식에서 이전하는 안내가 있다
-- **AND** `.claude/commands/opsx/`와 `.claude/skills/openspec-*`가 필요 없다는 안내가 있다
+- **THEN** `.claude/commands/opsx/`와 `.claude/skills/openspec-*`가 필요 없다는 안내가 있다
+
+#### Scenario: 다른 설치 방식 안내가 없다
+
+- **WHEN** `README.md`에서 설치 방식을 고르는 절, 다른 설치 방식 절, 그 방식에서 플러그인으로 옮기는 안내를 찾는다
+- **THEN** 셋 다 없다
+- **AND** 대상 프로젝트로 지시문을 복사하거나 링크하는 절차가 없다
+
+### Requirement: 설치 수단은 플러그인 하나뿐이어야 한다
+
+이 저장소는 플러그인 `sdd`와 `/sdd:init` 말고 다른 설치 수단을 담아서는 안 된다(MUST NOT): 대상 프로젝트로
+지시문을 복사하는 설치 스크립트도, 링크를 거는 스킬도 없어야 한다. 추적 중인 파일(지난 change 기록
+`openspec/changes/` 아래와 측정 당시 사실을 적은 `docs/field-validation.md` 각주는 빼고)에 그 수단의 이름이나
+그 수단을 위한 대비 문구가 남아 있어서는 안 된다(MUST NOT).
+
+#### Scenario: 설치 수단 파일이 없다
+
+- **WHEN** 저장소 루트에서 `git ls-files '*.sh'`와 `git ls-files .claude/skills`를 돌린다
+- **THEN** 앞의 결과는 `hooks/session-start.sh` 한 줄뿐이다
+- **AND** 뒤의 결과는 0건이다
+
+#### Scenario: 낡은 설치 방식 낱말이 남아 있지 않다
+
+- **WHEN** 저장소 루트에서 `git ls-files | grep -vE '^openspec/changes/|^docs/field-validation[.]md$' | xargs grep -nE 'install[.]sh|init-sd[d]|복사 방[식]|링크 방[식]|기존 설[치]|init-SDD:(begin|end)'`를 돌린다 (대소문자를 가린다)
+- **THEN** 결과가 0건이다

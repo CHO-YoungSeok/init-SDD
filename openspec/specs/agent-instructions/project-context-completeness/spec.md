@@ -10,10 +10,11 @@
 
 `openspec/config.yaml`은 주석이 아닌 실제 `context:` 값을 가져야 한다(SHALL).
 그 값은 최소한 다음을 담아야 한다(SHALL): 플러그인 `sdd`의 지시문 저장소이고 지시문이
-`agents/*.md`·`skills/**/SKILL.md`에 있다는 것, 실행 파일은 bash 스크립트(`install.sh`, `bin/`, `hooks/`)뿐이고
-테스트·빌드·CI가 없다는 것, 검증 수단이 `bash -n`(그 스크립트 전부) / `bash install.sh --dry-run` /
-`claude plugin validate` 두 명령 / OpenSpec CLI 실측 / grep 대조라는 것, 문서는 한국어이며 쉬운 말을 쓴다는 것,
-지시문 파일은 `Edit` 부분 수정만 한다는 것. 옛 지시문 경로 `.claude/agents/*.md`를 적어서는 안 된다(MUST NOT).
+`agents/*.md`·`skills/**/SKILL.md`에 있다는 것, 실행 파일은 bash 스크립트(`bin/`, `hooks/`)뿐이고
+테스트·빌드·CI가 없다는 것, 검증 수단이 `bash -n`(그 스크립트 전부) / `claude plugin validate` 두 명령 /
+OpenSpec CLI 실측 / grep 대조라는 것, 문서는 한국어이며 쉬운 말을 쓴다는 것,
+지시문 파일은 `Edit` 부분 수정만 한다는 것. 옛 지시문 경로 `.claude/agents/*.md`와 저장소에서 지운 설치 수단을
+적어서는 안 된다(MUST NOT).
 
 #### Scenario: 에이전트가 프로젝트 사정을 CLI에서 받는다
 
@@ -27,6 +28,12 @@
 - **WHEN** 같은 응답의 `context` 값을 읽는다
 - **THEN** `.claude/agents/*.md`라는 옛 지시문 경로가 없다
 - **AND** "실행 코드가 없다"는 단언과, 검증 수단을 `claude plugin validate` 없이 나열하며 "뿐"이라 끝맺는 문장이 없다
+
+#### Scenario: 지운 설치 수단이 context에 없다
+
+- **WHEN** `grep -cE 'install[.]sh|init-sd[d]|기존 설[치]' openspec/config.yaml`을 돌린다
+- **THEN** 결과가 `0`이다
+- **AND** 실행 파일 목록과 `bash -n` 대상이 `bin/sdd-openspec`, `bin/sdd-init`, `hooks/session-start.sh` 셋이다
 
 ### Requirement: context 키는 YAML 들여쓰기가 깨지지 않아야 한다
 
