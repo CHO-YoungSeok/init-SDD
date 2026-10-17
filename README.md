@@ -125,7 +125,7 @@ Claude Code에게 큰 일을 그냥 맡기면, 분석과 설계와 구현이 한
 | `design.md` | designer | 어떻게 (조건부) |
 | `tasks.md` | designer (작은 작업이면 preparer) | 작업 목록 |
 | `review.md` | reviewer | 판정 (finalizer가 읽어 확인) |
-| `.openspec.yaml` | `openspec new change` 가 만들고, preparer / designer 가 마커만 덧붙임 | spec 없는 change 표시(`skip_specs`) · capability 은퇴 표시(`retire_capabilities`) |
+| `.openspec.yaml` | `sdd-openspec new change` 가 만들고, preparer / designer 가 마커만 덧붙임 | spec 없는 change 표시(`skip_specs`) · capability 은퇴 표시(`retire_capabilities`) |
 
 작업이 끝나면 `finalizer`가 델타를 `openspec/specs/` 의 메인 spec에 병합한다.
 그게 이 프로젝트의 **누적된 사양**이 된다.
@@ -153,7 +153,7 @@ Claude Code 안에서 마켓플레이스를 등록하고:
 그 뒤 SDD를 쓸 프로젝트에서 `/sdd:init`을 한 번 돌린다. `openspec/`을 초기화하고, `openspec/config.yaml`의
 `context:` 초안과 권한 목록을 보여 주고 동의를 받은 뒤에 기록한다.
 
-`openspec init --tools claude`가 까는 `.claude/commands/opsx/`와 `.claude/skills/openspec-*`는 이 파이프라인에
+`sdd-openspec init --tools claude`가 까는 `.claude/commands/opsx/`와 `.claude/skills/openspec-*`는 이 파이프라인에
 필요 없다(지워도, 남겨도 된다). `/sdd:init`은 `--tools none`으로 초기화해서 그것들을 깔지 않는다.
 
 ### 훅 켜기·끄기
@@ -237,9 +237,9 @@ context: |
   모든 에이전트의 첫 명령이 실패한다.
 - **서브에이전트는 사용자에게 직접 물을 수 없다.** 질문은 보고서에 담겨 오케스트레이터를 거친다.
   그래서 범위 밖 확인·방안 선택 같은 관문이 메인 세션에 있다.
-- **에이전트는 openspec 스킬을 부르지도 읽지도 않는다.** `openspec instructions` 출력과 공용 규칙
+- **에이전트는 openspec 스킬을 부르지도 읽지도 않는다.** `sdd-openspec instructions` 출력과 공용 규칙
   `sdd-rules`, spec 병합 절차 `sdd-sync`를 따른다.
-- **되돌릴 수 없는 일은 에이전트가 하지 않는다.** `git push`, `openspec archive`는
+- **되돌릴 수 없는 일은 에이전트가 하지 않는다.** `git push`, `sdd-openspec archive`는
   사용자가 명시적으로 요청해야 한다. 메인 spec 파일 삭제(capability 은퇴)는 커밋 확인 때 은퇴 대상을 보여 주고,
   사용자가 커밋을 승인한 change에서만 finalizer가 한다.
 - **작은 작업 한 번은 서브에이전트 4번 호출이고, 큰 작업은 5~6번이다** (designer·reviewer가 opus).
@@ -249,14 +249,14 @@ context: |
   질문이라 `claude -p` 같은 비대화형 실행에서는 그 관문들이 뜨지 않는다.
 - **기존 코드가 있는 프로젝트는 처음에 spec이 0개다. 그게 맞다.** change를 하나씩 돌리면서
   건드리는 부분만 spec으로 쌓인다. 코드베이스 전체를 미리 문서화하지 않아도 된다.
-- `openspec init --tools claude`로 초기화하면 `/opsx:propose` 같은 명령 6개도 깔린다(`/sdd:init`은 깔지 않는다).
+- `sdd-openspec init --tools claude`로 초기화하면 `/opsx:propose` 같은 명령 6개도 깔린다(`/sdd:init`은 깔지 않는다).
   **그걸 직접 쓰면 리뷰 단계가 사라진다.** analyzer를 부른 경우라면
   결정 기록(decision.md)과 방안 선택 관문까지 함께 건너뛰게 된다. 평소엔 그냥 말로 시켜라.
 - 에이전트 파일과 이 문서는 **한국어**다. 파이프라인도 한국어로 말한다.
   다른 언어로 쓰려면 포크에서 `agents/*.md`와 `skills/{orchestra,sdd-rules,sdd-sync,init}/SKILL.md`를 번역하고,
-  산출물 언어는 `openspec init --language <언어>` 로 정한다.
+  산출물 언어는 `sdd-openspec init --language <언어>` 로 정한다.
 - **OpenSpec 버전:** 플러그인은 `sdd-openspec`이 1.14.1을 고정해 실행한다.
-  버전이 올라 명령이 바뀌어도 에이전트는 `openspec instructions` 출력을 정답으로 삼아 대부분 따라간다.
+  버전이 올라 명령이 바뀌어도 에이전트는 `sdd-openspec instructions` 출력을 정답으로 삼아 대부분 따라간다.
 - **버전 확인:**
   ```bash
   sdd-openspec --version    # 1.14.1
