@@ -36,8 +36,9 @@ SDD 파이프라인이 사용자 PATH의 openspec 버전에 끌려가지 않도�
 에이전트 파일, orchestra 스킬, sdd-rules 스킬, sdd-sync 스킬의 openspec 실행 예시는 `sdd-openspec`으로
 적어야 한다(SHALL). 모델은 예시 글자를 그대로 따라 치므로, `openspec`으로 남기면 PATH의 다른 버전이 돈다.
 
-sdd-rules 스킬의 "쓰는 스킬" 절은 두 대체 규칙을 적어야 한다(MUST): PATH의 `openspec`이 1.14.1 이상이면
-그대로 써도 된다. `sdd-openspec`이 없으면(기존 설치 방식) `openspec`을 쓰고 그 버전을 보고서에 적는다.
+sdd-rules 스킬의 "쓰는 스킬" 절은 대체 규칙 하나를 적어야 한다(MUST): PATH의 `openspec`이 1.14.1 이상이면
+그대로 써도 된다. `sdd-openspec`이 PATH에 없을 때 `openspec`으로 바꿔 치라는 규칙은 sdd-rules 스킬과
+orchestra 스킬 어디에도 두어서는 안 된다(MUST NOT) — 설치 수단이 플러그인 하나라 `sdd-openspec`은 늘 있다.
 
 메인 spec 시나리오 안의 검증 명령(`openspec validate ...` 등)은 이 요구사항 때문에 바꾸지 않는다(SHALL).
 
@@ -48,8 +49,9 @@ sdd-rules 스킬의 "쓰는 스킬" 절은 두 대체 규칙을 적어야 한다
 
 #### Scenario: 대체 규칙이 한 곳에 있다
 
-- **WHEN** sdd-rules 스킬의 "쓰는 스킬" 절을 읽는다
-- **THEN** 1.14.1 이상이면 `openspec`을 그대로 써도 된다는 규칙과, `sdd-openspec`이 없으면 `openspec`을 쓰고 버전을 보고한다는 규칙이 있다
+- **WHEN** sdd-rules 스킬의 "쓰는 스킬" 절을 읽고, `grep -n 'PATH에 없으면' skills/sdd-rules/SKILL.md skills/orchestra/SKILL.md`를 돌린다
+- **THEN** "쓰는 스킬" 절에 1.14.1 이상이면 `openspec`을 그대로 써도 된다는 규칙이 있다
+- **AND** grep 결과가 0건이다
 - **AND** 에이전트 파일에는 같은 규칙의 사본이 없다
 
 ### Requirement: 권한 목록에 래퍼가 들어 있어야 한다

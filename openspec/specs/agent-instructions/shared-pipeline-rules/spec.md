@@ -33,7 +33,7 @@ code-explorer를 뺀 7개 에이전트 파일(preparer, analyzer, designer, work
 regression-verifier, finalizer)의 frontmatter `skills:`에는 `sdd-rules`가 있어야
 한다(SHALL). finalizer는 `sdd-sync`도 가져야 한다(SHALL). 어느 에이전트의 `skills:`에도
 `openspec-`로 시작하는 스킬 이름이 있어서는 안 된다(MUST NOT). 스킬 이름에는 플러그인 접두사(`sdd:`)를
-붙이지 않는다(SHALL) — 플러그인에서 접두사 없는 이름이 주입되고(실측), 기존 설치본에서도 같은 글자로 동작한다.
+붙이지 않는다(SHALL) — 플러그인 안에서 접두사 없는 이름이 주입된다(실측).
 
 주입은 새 Claude Code 프로세스(`claude -p --plugin-dir <플러그인 루트>`)에서 확인할 수 있어야
 한다(SHALL). frontmatter `skills:`는 세션 시작 때 읽혀 같은 세션 안에서는 확인할 수 없다.
@@ -111,16 +111,17 @@ regression-verifier, finalizer)의 frontmatter `skills:`에는 `sdd-rules`가 �
 두어서는 안 된다(MUST NOT).
 
 - openspec 호출 표기: 명령은 `sdd-openspec`으로 친다. 대체 규칙(PATH의 `openspec`이 1.14.1 이상이면 그대로
-  써도 된다, `sdd-openspec`이 없으면 `openspec`을 쓰고 버전을 보고한다)은 "쓰는 스킬" 절에 둔다.
-- 에이전트 이름: 서브에이전트가 부를 수 있는 것은 `code-explorer` 하나이며 `sdd:code-explorer`로 부르고,
-  `not found`면 접두사 없는 `code-explorer`로 다시 부른다. "code-explorer 부르기" 절에 둔다.
+  써도 된다)은 "쓰는 스킬" 절에 둔다.
+- 에이전트 이름: 서브에이전트가 부를 수 있는 것은 `code-explorer` 하나이며 `sdd:code-explorer`로 부른다.
+  "code-explorer 부르기" 절에 둔다. 접두사 없는 이름으로 다시 부르는 대비 규칙은 두지 않는다(MUST NOT).
 
 두 규칙은 기존 일곱 절 안에 들어가야 하며(SHALL), 절을 새로 늘려서는 안 된다(MUST NOT).
 
 #### Scenario: 두 규칙이 sdd-rules에 있고 에이전트에는 없다
 
-- **WHEN** sdd-rules 스킬과 `agents/*.md`에서 "1.14.1"과 "not found"를 찾는다
-- **THEN** sdd-rules에서 "1.14.1"은 "쓰는 스킬" 절에만, "not found"는 "code-explorer 부르기" 절에만 나오고 "not found"는 파일 전체에서 한 줄이다
+- **WHEN** sdd-rules 스킬과 `agents/*.md`에서 "1.14.1", "sdd:code-explorer", "not found"를 찾는다
+- **THEN** sdd-rules에서 "1.14.1"은 "쓰는 스킬" 절에만, "sdd:code-explorer"는 "code-explorer 부르기" 절에만 나온다
+- **AND** "not found"는 sdd-rules와 `agents/*.md` 어디에도 없다
 - **AND** `agents/*.md`에는 그 규칙 문장이 없다
 
 #### Scenario: 절 수가 그대로다
